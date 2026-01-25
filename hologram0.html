@@ -9,7 +9,8 @@
         :root { --neon: #00f2ff; }
         body, html { 
             margin: 0; padding: 0; height: 100%; width: 100%;
-            background: #02050a url('./farfuture01.jpg') center bottom / cover no-repeat fixed;
+            /* Lưu ý: Ảnh nền mặc định ban đầu cần khớp với tên file thực tế nếu muốn load ngay từ đầu */
+            background: #02050a url('./farfuture01.png') center bottom / cover no-repeat fixed;
             font-family: 'Segoe UI', sans-serif; color: #fff; 
             overflow: hidden; /* Khóa cuộn body để xử lý trượt slide */
             transition: background-image 0.5s ease-in-out;
@@ -291,7 +292,7 @@
 
         // 2. LOGIC ĐỔI NỀN VÒNG LẶP
         const bgFiles = [
-            'farfuture01.jpg',
+            'farfuture01.png', // ĐÃ CẬP NHẬT: 01 LÀ PNG
             'farfuture02.jpg',
             'farfuture03.jpg',
             'farfuture04.jpg',
@@ -321,6 +322,9 @@
                 document.body.style.backgroundImage = `url('./${savedBg}')`;
                 bgIndex = bgFiles.indexOf(savedBg);
                 if (bgIndex === -1) bgIndex = 0;
+            } else {
+                // Nếu chưa có, load tấm đầu tiên (png)
+                document.body.style.backgroundImage = `url('./${bgFiles[0]}')`;
             }
         };
     </script>
