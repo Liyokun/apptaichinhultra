@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Finance Dashboard Dynamic</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="design.css">
+</head>
+<body data-theme="light">
+
+    <div id="splash-screen">
+        <div id="intro-visual" class="atomic-system">
+            <div class="core-glow"></div> 
+            <div class="orbit-plane plane-1"><div class="spinner spin-1"><div class="cube-wrapper"><svg class="cube-svg" viewBox="0 0 100 100"><g class="cube-line"><path d="M30 30 L70 30 L70 70 L30 70 Z" /><path d="M40 40 L60 40 L60 60 L40 60 Z" opacity="0.6" /><line x1="30" y1="30" x2="40" y2="40" /><line x1="70" y1="30" x2="60" y2="40" /><line x1="70" y1="70" x2="60" y2="60" /><line x1="30" y1="70" x2="40" y2="60" /></g></svg></div></div></div>
+            <div class="orbit-plane plane-2"><div class="spinner spin-2"><div class="cube-wrapper"><svg class="cube-svg" viewBox="0 0 100 100"><g class="cube-line"><path d="M30 30 L70 30 L70 70 L30 70 Z" /><path d="M40 40 L60 40 L60 60 L40 60 Z" opacity="0.6" /><line x1="30" y1="30" x2="40" y2="40" /><line x1="70" y1="30" x2="60" y2="40" /><line x1="70" y1="70" x2="60" y2="60" /><line x1="30" y1="70" x2="40" y2="60" /></g></svg></div></div></div>
+            <div class="orbit-plane plane-3"><div class="spinner spin-3"><div class="cube-wrapper"><svg class="cube-svg" viewBox="0 0 100 100"><g class="cube-line"><path d="M30 30 L70 30 L70 70 L30 70 Z" /><path d="M40 40 L60 40 L60 60 L40 60 Z" opacity="0.6" /><line x1="30" y1="30" x2="40" y2="40" /><line x1="70" y1="30" x2="60" y2="40" /><line x1="70" y1="70" x2="60" y2="60" /><line x1="30" y1="70" x2="40" y2="60" /></g></svg></div></div></div>
+        </div>
+        <div id="intro-ui" style="text-align: center;">
+            <h1 class="neon-title">FINANCE DASHBOARD</h1>
+            <p class="sub-title">System Version 8.0 | Dynamic Core</p>
+            <button class="start-btn" onclick="startLoading()">Khởi chạy hệ thống</button>
+        </div>
+        <div id="loading-container">
+            <div class="loader"></div>
+            <p class="loading-text">LOADING CORE... <span id="load-percent">0%</span></p>
+        </div>
+    </div>
+
+    <div id="screen-daily" class="screen active">
+        <h2 id="display-month-title">Nhập chi tiêu</h2>
+        
+        <div id="daily-wallets-list"></div>
+
+        <button class="btn btn-primary" onclick="endMonth()">KẾT THÚC THÁNG (RESET)</button>
+    </div>
+
+    <div id="screen-budget" class="screen">
+        <h2>Dòng tiền & Biến động</h2>
+        <div class="saving-box">
+            <div class="saving-label">Mục tiêu Tiết kiệm (Dự tính)</div>
+            <div class="saving-value" id="static-saving-display">0 VNĐ</div>
+        </div>
+        <div class="card" id="budget-details"></div>
+        <div class="balance-box" id="balance-box-ui">
+            <div class="balance-label">SỐ DƯ THỰC TẾ HIỆN TẠI</div>
+            <div class="balance-value" id="actual-balance-display">0 VNĐ</div>
+        </div>
+    </div>
+
+    <div id="screen-status" class="screen">
+        <div id="display-area">
+            <div id="visual-effect" class="effect-overlay"></div>
+            <div class="hologram-info">
+                <div style="font-size: 12px; opacity: 0.8;">TÌNH HÌNH TÀI CHÍNH</div>
+                <div id="hologram-percent" style="font-size: 24px; font-weight: bold; color: var(--neon-blue);">100%</div>
+                <div id="hologram-status-text" style="font-size: 13px;">Trạng thái</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-history" class="screen">
+        <h2>Lịch sử</h2>
+        <div id="history-list"></div>
+    </div>
+
+    <div id="screen-alloc" class="screen">
+        <h2>Cấu hình Ngân sách</h2>
+        <p style="color: #666; font-size: 13px;">Quản lý các ví chi tiêu của bạn tại đây</p>
+        
+        <div class="card">
+            <div class="input-group" style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
+                <span style="font-weight:bold; color:var(--primary); font-size: 16px;">TỔNG NGÂN SÁCH GỐC (K)</span>
+                <div class="k-input-wrapper">
+                    <input type="number" id="base-total-budget" style="font-weight:bold; color:var(--primary);" onchange="updateBaseTotal(this.value)">
+                </div>
+            </div>
+
+            <div class="group-title" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Danh sách Ví con:</span>
+                <button class="btn-mini btn-add" onclick="addNewWallet()">+ Thêm ví</button>
+            </div>
+
+            <div id="alloc-wallets-container"></div>
+
+            <div style="background: #FFF3E0; padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px;">
+                <div style="font-size: 12px; color: #E65100;">Tiết kiệm dự tính (Còn lại):</div>
+                <div id="preview-saving-calc" style="font-weight: bold; color: #E65100; font-size: 18px;">0</div>
+            </div>
+
+            <button class="btn btn-success" onclick="saveAllocConfig()">LƯU PHÂN BỔ</button>
+        </div>
+    </div>
+
+    <div id="screen-settings" class="screen">
+        <h2>Cài đặt</h2>
+        <div class="card">
+            <div style="margin-bottom:10px; font-weight:bold;">Tên tháng:</div>
+            <input type="text" id="month-name-inp" style="text-align:left;">
+            <button class="btn btn-primary" onclick="updateMonthName()">Cập nhật tên</button>
+        </div>
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+            <b>Giao diện Tối/Sáng</b>
+            <button onclick="toggleTheme()" style="padding:8px 16px; border-radius:20px; border:1px solid #ddd; background:var(--input-bg); color:var(--text);">Đổi màu</button>
+        </div>
+    </div>
+
+    <div class="nav-container" style="justify-content: center; align-items: center; border-top: 1px solid rgba(0, 242, 255, 0.3);">
+        <button onclick="window.location.href='./hologram0.html'" 
+                style="background: none; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 10px 30px; border-radius: 20px; font-weight: bold; letter-spacing: 2px; cursor: pointer; text-shadow: 0 0 5px var(--neon-blue); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);">
+            ← QUAY LẠI SẢNH
+        </button>
+    </div>
+
+    <script src="magic.js"></script>
+    <script src="logic.js"></script>
+</body>
+</html>

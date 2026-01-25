@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM CORE - LOBBY</title>
+    <style>
+        /* --- GIỮ NGUYÊN CSS GỐC CỦA BẠN --- */
+        :root { --neon: #00f2ff; }
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            background: #02050a url('./farfuture01.jpg') center bottom / cover no-repeat fixed;
+            font-family: 'Segoe UI', sans-serif; color: #fff; 
+            overflow: hidden; /* Khóa cuộn body để xử lý trượt slide */
+            transition: background-image 0.5s ease-in-out;
+        }
+        
+        .header {
+            position: absolute; top: 40px; width: 100%; text-align: center; z-index: 20;
+            pointer-events: none;
+        }
+        .header h1 {
+            margin: 0; font-size: 24px; letter-spacing: 6px; color: var(--neon);
+            text-shadow: 0 0 15px var(--neon); text-transform: uppercase;
+            font-weight: 300; border: 1px solid rgba(0, 242, 255, 0.3);
+            display: inline-block; padding: 10px 30px; border-radius: 40px;
+            background: rgba(0, 5, 10, 0.6); backdrop-filter: blur(4px);
+        }
+
+        #dust-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1; 
+        }
+
+        .dust {
+            position: absolute; background: var(--neon); border-radius: 50%;
+            box-shadow: 0 0 6px var(--neon), 0 0 12px rgba(0, 242, 255, 0.6);
+            opacity: 0.6; animation: float linear infinite;
+        }
+
+        @keyframes float {
+            0%   { transform: translateY(110vh) scale(0.3); opacity: 0; }
+            15%  { opacity: 0.8; }
+            80%  { opacity: 0.6; }
+            100% { transform: translateY(-20vh) scale(1); opacity: 0; }
+        }
+
+        /* Task Wrapper GỐC (Không chỉnh sửa) */
+        .task-wrapper {
+            position: relative; width: 100%; height: 110px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .svg-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; overflow: visible;
+        }
+
+        .beam { fill: none; stroke-linecap: round; stroke-linejoin: round; transition: all 0.3s ease; }
+        .core-beam { stroke: var(--neon); stroke-width: 1.5; fill: rgba(0, 242, 255, 0.02); }
+        .shell-beam { stroke: var(--neon); stroke-width: 2.5; opacity: 0.8; }
+
+        .content { display: flex; flex-direction: column; align-items: center; z-index: 2; pointer-events: none; }
+        .icon { 
+            width: 32px; height: 32px; fill: none; stroke: var(--neon); stroke-width: 1.2; 
+            margin-bottom: 8px; filter: url(#neonGlow); transition: 0.3s;
+        }
+        .label { 
+            color: var(--neon); font-size: 11px; letter-spacing: 1.5px; font-weight: bold; 
+            text-shadow: 0 0 5px var(--neon); transition: 0.3s; text-transform: uppercase;
+        }
+
+        .task-wrapper:hover .shell-beam { stroke: var(--neon); stroke-width: 3.5; filter: url(#strongGlow); opacity: 1; }
+        .task-wrapper:hover .core-beam { stroke: var(--neon); stroke-width: 2; filter: url(#strongGlow); fill: rgba(0, 242, 255, 0.15); }
+        .task-wrapper:hover .icon { transform: scale(1.1); filter: drop-shadow(0 0 8px var(--neon)); }
+        .task-wrapper:hover .label { text-shadow: 0 0 15px var(--neon); }
+        .task-wrapper:active .core-beam { stroke: #fff; filter: url(#strongGlow); }
+
+        /* --- PHẦN BỔ SUNG MỚI (SLIDE & BUTTONS) --- */
+        
+        /* Khung nhìn trượt */
+        #viewport {
+            width: 100vw; height: 100%;
+            overflow: hidden; position: relative; z-index: 10;
+        }
+        
+        /* Container chứa 2 trang */
+        #page-container {
+            display: flex; width: 200vw; height: 100%;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Mỗi trang chiếm 100vw */
+        .page {
+            width: 100vw; height: 100%;
+            display: flex; flex-direction: column; align-items: center;
+            overflow-y: auto; /* Cho phép cuộn riêng từng trang */
+        }
+
+        /* Grid giữ nguyên thông số, chỉ thêm margin bottom để tránh nút */
+        .grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px 20px; 
+            width: 90%; max-width: 500px; 
+            margin: 120px auto 100px auto; 
+            position: relative;
+        }
+
+        /* Nút điều khiển tròn Neon */
+        .ctrl-btn {
+            position: fixed; bottom: 30px; width: 55px; height: 55px;
+            border: 1px solid var(--neon); border-radius: 50%;
+            background: rgba(0, 5, 10, 0.6); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 100; box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+            transition: 0.3s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ctrl-btn:active { background: var(--neon); box-shadow: 0 0 25px var(--neon); }
+        .ctrl-btn svg { width: 24px; height: 24px; fill: none; stroke: var(--neon); stroke-width: 2; transition: 0.3s; }
+        .ctrl-btn:active svg { stroke: #000; }
+        
+        .btn-left { left: 30px; }
+        .btn-right { right: 30px; }
+        
+        /* Hiệu ứng xoay mũi tên */
+        .flipped { transform: rotate(180deg); }
+        /* Hiệu ứng xoay nút background */
+        .spin { animation: spin 0.5s ease; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+    
+    <div class="header"><h1>SYSTEM CORE</h1></div>
+    <div id="dust-container"></div>
+
+    <div class="ctrl-btn btn-left" id="bgBtn" onclick="changeBackground()">
+        <svg viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 0 1 2.828 0L16 16m-2-2l1.586-1.586a2 2 0 0 1 2.828 0L20 14m-6-6h.01M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/></svg>
+    </div>
+
+    <div class="ctrl-btn btn-right" id="navBtn" onclick="togglePage()">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </div>
+
+    <svg style="position: absolute; width: 0; height: 0; overflow: hidden;">
+        <defs>
+            <filter id="neonGlow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="strongGlow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+
+            <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1"><stop offset="10%" stop-color="white" /><stop offset="40%" stop-color="#222" /><stop offset="60%" stop-color="#222" /><stop offset="90%" stop-color="white" /></linearGradient>
+            <mask id="mask1"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad1)" /></mask>
+
+            <linearGradient id="grad2" x1="1" y1="0" x2="0" y2="1"><stop offset="10%" stop-color="white" /><stop offset="40%" stop-color="#222" /><stop offset="60%" stop-color="#222" /><stop offset="90%" stop-color="white" /></linearGradient>
+            <mask id="mask2"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad2)" /></mask>
+
+            <linearGradient id="grad3" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stop-color="white" /><stop offset="30%" stop-color="#111" /><stop offset="70%" stop-color="#111" /><stop offset="95%" stop-color="white" /></linearGradient>
+            <mask id="mask3"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad3)" /></mask>
+
+             <linearGradient id="grad4" x1="0" y1="0" x2="1" y2="0"><stop offset="10%" stop-color="white" /><stop offset="45%" stop-color="#000" /><stop offset="55%" stop-color="#000" /><stop offset="90%" stop-color="white" /></linearGradient>
+            <mask id="mask4"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad4)" /></mask>
+        </defs>
+    </svg>
+
+    <div id="viewport">
+        <div id="page-container">
+            
+            <div class="page">
+                <div class="grid">
+                    <div class="task-wrapper" onclick="openPortal('daily')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><div class="label">NHẬP LIỆU</div></div>
+                    </div>
+
+                    <div class="task-wrapper" onclick="openPortal('budget')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask2)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><div class="label">BIẾN ĐỘNG</div></div>
+                    </div>
+
+                    <div class="task-wrapper" onclick="openPortal('status')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask3)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><div class="label">AI SOI VÍ</div></div>
+                    </div>
+
+                    <div class="task-wrapper" onclick="openPortal('history')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask4)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><div class="label">LỊCH SỬ</div></div>
+                    </div>
+
+                    <div class="task-wrapper" onclick="openPortal('alloc')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><div class="label">PHÂN BỔ</div></div>
+                    </div>
+
+                    <div class="task-wrapper" onclick="openPortal('settings')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask2)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><div class="label">CÀI ĐẶT</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page">
+                <div class="grid">
+                    <div class="task-wrapper" onclick="openPortal('charts')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 21H3V3"/><path d="M18 17l-6-6-4 4-5-5"/></svg>
+                            <div class="label">DỮ LIỆU SỐ</div>
+                        </div>
+                    </div>
+
+                    <div class="task-wrapper" onclick="openPortal('ai-analyst')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content">
+                            <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                            <div class="label">PHÂN TÍCH AI</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // CODE BỤI CÔNG NGHỆ GỐC
+        function createDust() {
+            const container = document.getElementById('dust-container');
+            const particleCount = 80;
+
+            for (let i = 0; i < particleCount; i++) {
+                const dust = document.createElement('div');
+                dust.className = 'dust';
+                const size = Math.random() * 4 + 2; 
+                dust.style.width = size + 'px'; dust.style.height = size + 'px';
+                dust.style.left = Math.random() * 100 + 'vw';
+                const duration = Math.random() * 12 + 8; 
+                dust.style.animationDuration = duration + 's';
+                dust.style.animationDelay = '-' + (Math.random() * duration) + 's';
+                container.appendChild(dust);
+            }
+        }
+        createDust();
+
+        // HÀM CHUYỂN CỔNG GỐC
+        function openPortal(taskName) {
+            window.location.href = `./index.html?task=${taskName}`;
+        }
+
+        // --- CODE MỚI BỔ SUNG ---
+
+        // 1. LOGIC CHUYỂN TRANG
+        let isPage2 = false;
+        function togglePage() {
+            isPage2 = !isPage2;
+            const container = document.getElementById('page-container');
+            const navBtn = document.getElementById('navBtn');
+            
+            // Trượt ngang
+            container.style.transform = isPage2 ? 'translateX(-100vw)' : 'translateX(0)';
+            
+            // Xoay mũi tên
+            navBtn.classList.toggle('flipped');
+        }
+
+        // 2. LOGIC ĐỔI NỀN VÒNG LẶP
+        const bgFiles = [
+            'farfuture01.jpg',
+            'farfuture02.jpg',
+            'farfuture03.jpg',
+            'farfuture04.jpg',
+            'farfuture05.jpg'
+        ];
+        let bgIndex = 0; 
+
+        function changeBackground() {
+            // Hiệu ứng xoay nút
+            const btn = document.getElementById('bgBtn');
+            btn.classList.add('spin');
+            setTimeout(() => btn.classList.remove('spin'), 500);
+
+            // Đổi ảnh
+            bgIndex = (bgIndex + 1) % bgFiles.length;
+            const nextBg = bgFiles[bgIndex];
+            document.body.style.backgroundImage = `url('./${nextBg}')`;
+            
+            // Lưu lại
+            localStorage.setItem('user_lobby_bg', nextBg);
+        }
+
+        // Load ảnh nền đã lưu
+        window.onload = function() {
+            const savedBg = localStorage.getItem('user_lobby_bg');
+            if (savedBg) {
+                document.body.style.backgroundImage = `url('./${savedBg}')`;
+                bgIndex = bgFiles.indexOf(savedBg);
+                if (bgIndex === -1) bgIndex = 0;
+            }
+        };
+    </script>
+</body>
+</html>
