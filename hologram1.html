@@ -156,11 +156,10 @@
 
     <div id="viewport">
         <div id="page-container">
-            
             <div class="page">
                 <div class="grid">
                     
-                    <div class="task-wrapper" onclick="window.location.href='./bieudo.html'">
+                    <div class="task-wrapper" onclick="openPortal('charts')">
                         <svg class="svg-container" viewBox="-20 -20 240 160">
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
@@ -184,7 +183,6 @@
 
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -302,11 +300,16 @@
         }
         createDust();
 
-        // 3. LOGIC MỞ CỔNG - ĐÃ SỬA CHỈ RIÊNG TASK PHÂN TÍCH AI
+        // --- 3. LOGIC MỞ CỔNG (SỬA LẠI ĐỂ KHÔNG BỊ LỖI CHUYỂN INDEX) ---
         function openPortal(taskName) {
             if (taskName === 'ai-analyst') {
                 window.location.href = './lenhAI.html';
-            } else {
+            } 
+            else if (taskName === 'charts') {
+                window.location.href = './bieudo.html'; // Chỉ định rõ file biểu đồ
+            }
+            else {
+                // Các task cũ (nếu có) mới quay về index
                 window.location.href = `./index.html?task=${taskName}`;
             }
         }
