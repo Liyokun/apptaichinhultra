@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ANALYST - TRỢ LÝ ẢO</title>
+    <style>
+        /* --- 1. CẤU HÌNH CHUNG (CHUẨN TỪ HOLOGRAM0) --- */
+        :root { --neon: #00f2ff; }
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            background: #02050a url('./farfuture01.png') center bottom / cover no-repeat fixed;
+            font-family: 'Segoe UI', sans-serif; color: #fff; 
+            /* Cho phép cuộn dọc vì 4 task khá dài */
+            overflow-x: hidden; overflow-y: auto; 
+            user-select: none;
+        }
+
+        /* --- 2. HIỆU ỨNG (GIỮ NGUYÊN) --- */
+        #explosion-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 100;
+        }
+
+        #dust-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1; 
+        }
+
+        .dust {
+            position: absolute; background: var(--neon); border-radius: 50%;
+            box-shadow: 0 0 6px var(--neon), 0 0 12px rgba(0, 242, 255, 0.6);
+            opacity: 0.6; animation: float linear infinite;
+        }
+
+        @keyframes float {
+            0%   { transform: translateY(110vh) scale(0.3); opacity: 0; }
+            15%  { opacity: 0.8; }
+            80%  { opacity: 0.6; }
+            100% { transform: translateY(-20vh) scale(1); opacity: 0; }
+        }
+
+        .header {
+            position: absolute; top: 40px; width: 100%; text-align: center; z-index: 20;
+            pointer-events: none;
+        }
+        .header h1 {
+            margin: 0; font-size: 24px; letter-spacing: 6px; color: var(--neon);
+            text-shadow: 0 0 15px var(--neon); text-transform: uppercase;
+            font-weight: 300; border: 1px solid rgba(0, 242, 255, 0.3);
+            display: inline-block; padding: 10px 30px; border-radius: 40px;
+            background: rgba(0, 5, 10, 0.6); backdrop-filter: blur(4px);
+        }
+
+        /* --- 3. GRID & TASK (CẤU HÌNH CHO 4 TASK DỌC) --- */
+        .grid {
+            display: grid; 
+            grid-template-columns: 1fr; /* 1 Cột dọc */
+            gap: 30px; /* Khoảng cách chuẩn để không bị dính */
+            width: 85%; 
+            max-width: 300px; /* Độ rộng chuẩn mobile */
+            /* Margin trên dưới đủ lớn để không bị che bởi header/back button */
+            margin: 140px auto 100px auto; 
+            position: relative; z-index: 10;
+        }
+
+        .task-wrapper {
+            position: relative; width: 100%; 
+            height: 110px; /* Chiều cao chuẩn hologram */
+            display: flex; align-items: center; justify-content: center;
+            /* Tắt click khung bao ngoài để dùng hit-area */
+            pointer-events: none; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .svg-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; overflow: visible;
+        }
+        /* ViewBox chuẩn hologram */
+        .svg-container svg { width: 100%; height: 100%; }
+
+        .beam { fill: none; stroke-linecap: round; stroke-linejoin: round; transition: all 0.3s ease; }
+        .core-beam { stroke: var(--neon); stroke-width: 1.5; fill: rgba(0, 242, 255, 0.02); }
+        .shell-beam { stroke: var(--neon); stroke-width: 2.5; opacity: 0.8; }
+
+        /* Lớp Hit-area: Vùng nhận click chuẩn xác */
+        .hit-area {
+            fill: rgba(0,0,0,0); stroke: none; 
+            pointer-events: auto; cursor: pointer;
+        }
+
+        .content { 
+            display: flex; flex-direction: column; align-items: center; z-index: 2; 
+            /* Bật lại click cho nội dung bên trong */
+            pointer-events: auto; 
+            cursor: pointer;
+        }
+        .icon { 
+            width: 32px; height: 32px; fill: none; stroke: var(--neon); stroke-width: 1.2; 
+            margin-bottom: 8px; filter: url(#neonGlow); transition: 0.3s;
+        }
+        .label { 
+            color: var(--neon); font-size: 11px; letter-spacing: 1.5px; font-weight: bold; 
+            text-shadow: 0 0 5px var(--neon); transition: 0.3s; text-transform: uppercase;
+        }
+
+        /* Hiệu ứng Hover/Active */
+        .task-wrapper:hover .shell-beam { stroke: var(--neon); stroke-width: 3.5; filter: url(#strongGlow); opacity: 1; }
+        .task-wrapper:hover .core-beam { stroke: var(--neon); stroke-width: 2; filter: url(#strongGlow); fill: rgba(0, 242, 255, 0.15); }
+        .task-wrapper:hover .icon { transform: scale(1.1); filter: drop-shadow(0 0 8px var(--neon)); }
+        .task-wrapper:active .core-beam { stroke: #fff; filter: url(#strongGlow); }
+
+        /* --- 4. UI KHÁC --- */
+        .back-circle {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 55px; height: 55px; border: 1.5px solid var(--neon); border-radius: 50%;
+            background: rgba(0,5,10,0.6); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 90; box-shadow: 0 0 15px rgba(0,242,255,0.2);
+        }
+
+        /* Màn hình Loading */
+        #loading-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .loader-ring {
+            width: 50px; height: 50px; border: 3px solid rgba(0, 242, 255, 0.1);
+            border-top: 3px solid var(--neon); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 15px;
+            box-shadow: 0 0 10px var(--neon);
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    
+    <canvas id="explosion-canvas"></canvas>
+    <div id="dust-container"></div>
+    <div class="header"><h1>AI ANALYST</h1></div>
+
+    <div id="loading-overlay">
+        <div class="loader-ring"></div>
+        <div style="color:var(--neon); letter-spacing:3px; font-size:11px;">INITIALIZING AI...</div>
+    </div>
+
+    <svg style="position: absolute; width: 0; height: 0; overflow: hidden;">
+        <defs>
+            <filter id="neonGlow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="strongGlow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1"><stop offset="10%" stop-color="white" /><stop offset="40%" stop-color="#222" /><stop offset="60%" stop-color="#222" /><stop offset="90%" stop-color="white" /></linearGradient>
+            <mask id="mask1"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad1)" /></mask>
+        </defs>
+    </svg>
+
+    <div class="grid">
+        <div class="task-wrapper">
+            <svg class="svg-container" viewBox="-20 -20 240 160">
+                <path class="hit-area" onclick="startAI('lenh01.html')" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+            </svg>
+            <div class="content" onclick="startAI('lenh01.html')">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="12" r="3"/></svg>
+                <div class="label">QUÉT BẤT THƯỜNG</div>
+            </div>
+        </div>
+
+        <div class="task-wrapper">
+            <svg class="svg-container" viewBox="-20 -20 240 160">
+                <path class="hit-area" onclick="startAI('lenh02.html')" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+            </svg>
+            <div class="content" onclick="startAI('lenh02.html')">
+                <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <div class="label">DỰ BÁO CHI TIÊU</div>
+            </div>
+        </div>
+
+        <div class="task-wrapper">
+            <svg class="svg-container" viewBox="-20 -20 240 160">
+                <path class="hit-area" onclick="startAI('lenh03.html')" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+            </svg>
+            <div class="content" onclick="startAI('lenh03.html')">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                <div class="label">TỐI ƯU NGÂN SÁCH</div>
+            </div>
+        </div>
+
+        <div class="task-wrapper">
+            <svg class="svg-container" viewBox="-20 -20 240 160">
+                <path class="hit-area" onclick="startAI('lenh04.html')" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+            </svg>
+            <div class="content" onclick="startAI('lenh04.html')">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                <div class="label">CHIẾN LƯỢC TÍCH LŨY</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="back-circle" onclick="window.location.href='./hologram0.html'">
+        <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--neon)" stroke-width="2" fill="none"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </div>
+
+    <script>
+        // 1. BACKGROUND TỪ SẢNH (ĐỒNG BỘ)
+        window.onload = function() {
+            const savedBg = localStorage.getItem('user_lobby_bg');
+            if (savedBg) document.body.style.backgroundImage = `url('./${savedBg}')`;
+        };
+
+        // 2. HIỆU ỨNG BỤI (DUST)
+        function createDust() {
+            const container = document.getElementById('dust-container');
+            const particleCount = 80; 
+            for (let i = 0; i < particleCount; i++) {
+                const dust = document.createElement('div');
+                dust.className = 'dust';
+                const size = Math.random() * 4 + 2; 
+                dust.style.width = size + 'px'; dust.style.height = size + 'px';
+                dust.style.left = Math.random() * 100 + 'vw';
+                const duration = Math.random() * 12 + 8; 
+                dust.style.animationDuration = duration + 's';
+                dust.style.animationDelay = '-' + (Math.random() * duration) + 's';
+                container.appendChild(dust);
+            }
+        }
+        createDust();
+
+        // 3. HIỆU ỨNG NỔ (EXPLOSION)
+        const cv = document.getElementById("explosion-canvas");
+        const ctx = cv.getContext("2d");
+        let shards = [];
+        function resize() { cv.width = window.innerWidth; cv.height = window.innerHeight; }
+        window.onresize = resize; resize();
+
+        class NeonShard {
+            constructor(x, y, isSparkle) {
+                this.x = x; this.y = y; this.isSparkle = isSparkle;
+                this.life = 1.0; this.decay = isSparkle ? 0.03 : 0.02 + Math.random()*0.02;
+                const a = Math.random()*Math.PI*2; const s = isSparkle ? (1+Math.random()*4) : (3+Math.random()*4);
+                this.vx = Math.cos(a)*s; this.vy = Math.sin(a)*s;
+                this.size = isSparkle ? Math.random()*2 : (5+Math.random()*8);
+                this.rot = a; this.vRot = (Math.random()-0.5)*0.3;
+            }
+            update() { this.vx*=0.95; this.vy*=0.95; this.x+=this.vx; this.y+=this.vy; this.rot+=this.vRot; this.life-=this.decay; }
+            draw() {
+                if(this.life<=0) return;
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+                ctx.globalCompositeOperation="lighter";
+                ctx.beginPath();
+                if(this.isSparkle) ctx.arc(0,0,this.size,0,Math.PI*2);
+                else { ctx.moveTo(0,-this.size); ctx.lineTo(this.size*0.5,this.size); ctx.lineTo(-this.size*0.5,this.size); }
+                ctx.shadowBlur=15*this.life; ctx.shadowColor="#00f2ff";
+                ctx.strokeStyle=`rgba(0,242,255,${this.life})`; ctx.stroke();
+                ctx.restore();
+            }
+        }
+        function animate() {
+            ctx.clearRect(0,0,cv.width,cv.height);
+            shards=shards.filter(s=>s.life>0); shards.forEach(s=>{s.update();s.draw()});
+            requestAnimationFrame(animate);
+        }
+        animate();
+        window.addEventListener('mousedown', e => { for(let i=0;i<6;i++) shards.push(new NeonShard(e.clientX,e.clientY, i%2==0)); });
+        window.addEventListener('touchstart', e => { const t=e.touches[0]; for(let i=0;i<6;i++) shards.push(new NeonShard(t.clientX,t.clientY, i%2==0)); });
+
+        // 4. HÀM CHUYỂN TRANG
+        function startAI(link) {
+            document.getElementById('loading-overlay').style.display = 'flex';
+            setTimeout(() => {
+                window.location.href = link;
+            }, 1500); // Đợi 1.5 giây loading
+        }
+    </script>
+</body>
+</html>
