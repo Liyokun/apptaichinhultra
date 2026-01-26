@@ -9,11 +9,18 @@
         :root { --neon: #00f2ff; }
         body, html { 
             margin: 0; padding: 0; height: 100%; width: 100%;
-            /* Lưu ý: Ảnh nền mặc định ban đầu cần khớp với tên file thực tế nếu muốn load ngay từ đầu */
+            /* Đã đảm bảo ảnh nền số 01 là .png */
             background: #02050a url('./farfuture01.png') center bottom / cover no-repeat fixed;
             font-family: 'Segoe UI', sans-serif; color: #fff; 
-            overflow: hidden; /* Khóa cuộn body để xử lý trượt slide */
+            overflow: hidden; 
             transition: background-image 0.5s ease-in-out;
+        }
+
+        /* --- BỔ SUNG CSS CHO HIỆU ỨNG NỔ --- */
+        #explosion-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; 
+            z-index: 100; 
         }
         
         .header {
@@ -81,26 +88,25 @@
 
         /* --- PHẦN BỔ SUNG MỚI (SLIDE & BUTTONS) --- */
         
-        /* Khung nhìn trượt */
+        /* Khung nhìn */
         #viewport {
             width: 100vw; height: 100%;
             overflow: hidden; position: relative; z-index: 10;
         }
         
-        /* Container chứa 2 trang */
+        /* Container - Đã sửa thành 100vw (Bỏ slide) */
         #page-container {
-            display: flex; width: 200vw; height: 100%;
-            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            display: flex; width: 100vw; height: 100%;
         }
 
         /* Mỗi trang chiếm 100vw */
         .page {
             width: 100vw; height: 100%;
             display: flex; flex-direction: column; align-items: center;
-            overflow-y: auto; /* Cho phép cuộn riêng từng trang */
+            overflow-y: auto; 
         }
 
-        /* Grid giữ nguyên thông số, chỉ thêm margin bottom để tránh nút */
+        /* Grid giữ nguyên thông số */
         .grid {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px 20px; 
             width: 90%; max-width: 500px; 
@@ -125,8 +131,6 @@
         .btn-left { left: 30px; }
         .btn-right { right: 30px; }
         
-        /* Hiệu ứng xoay mũi tên */
-        .flipped { transform: rotate(180deg); }
         /* Hiệu ứng xoay nút background */
         .spin { animation: spin 0.5s ease; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -135,6 +139,8 @@
 </head>
 <body>
     
+    <canvas id="explosion-canvas"></canvas>
+
     <div class="header"><h1>SYSTEM CORE</h1></div>
     <div id="dust-container"></div>
 
@@ -142,7 +148,7 @@
         <svg viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 0 1 2.828 0L16 16m-2-2l1.586-1.586a2 2 0 0 1 2.828 0L20 14m-6-6h.01M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/></svg>
     </div>
 
-    <div class="ctrl-btn btn-right" id="navBtn" onclick="togglePage()">
+    <div class="ctrl-btn btn-right" id="navBtn" onclick="window.location.href='./hologram1.html'">
         <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </div>
 
@@ -219,37 +225,110 @@
                     </div>
                 </div>
             </div>
-
-            <div class="page">
-                <div class="grid">
-                    <div class="task-wrapper" onclick="openPortal('charts')">
-                        <svg class="svg-container" viewBox="-20 -20 240 160">
-                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
-                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
-                        </svg>
-                        <div class="content">
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 21H3V3"/><path d="M18 17l-6-6-4 4-5-5"/></svg>
-                            <div class="label">DỮ LIỆU SỐ</div>
-                        </div>
-                    </div>
-
-                    <div class="task-wrapper" onclick="openPortal('ai-analyst')">
-                        <svg class="svg-container" viewBox="-20 -20 240 160">
-                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
-                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
-                        </svg>
-                        <div class="content">
-                            <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-                            <div class="label">PHÂN TÍCH AI</div>
-                        </div>
-                    </div>
-                </div>
+            
             </div>
-
-        </div>
     </div>
 
     <script>
+        // ----------------------------------------------------
+        // BỔ SUNG: HIỆU ỨNG MẢNH VỠ (NEON SHARDS)
+        // ----------------------------------------------------
+        const cv = document.getElementById("explosion-canvas");
+        const ctx = cv.getContext("2d");
+        let shards = [];
+
+        function resize() { cv.width = window.innerWidth; cv.height = window.innerHeight; }
+        window.onresize = resize;
+        resize();
+
+        class NeonShard {
+            constructor(x, y, isSparkle = false) {
+                this.x = x; this.y = y; this.isSparkle = isSparkle;
+                this.life = 1.0;
+                this.decay = isSparkle ? 0.03 : 0.02 + Math.random() * 0.02;
+                
+                const angle = Math.random() * Math.PI * 2;
+                const speed = isSparkle ? (1 + Math.random() * 4) : (3 + Math.random() * 4);
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+
+                this.size = isSparkle ? (Math.random() * 2) : (5 + Math.random() * 8);
+                this.widthRatio = 0.3 + Math.random() * 0.4;
+                this.rot = angle; 
+                this.vRot = (Math.random() - 0.5) * 0.3;
+            }
+
+            update() {
+                this.vx *= 0.95; this.vy *= 0.95;
+                this.x += this.vx; this.y += this.vy;
+                this.rot += this.vRot; this.life -= this.decay;
+            }
+
+            draw() {
+                if(this.life <= 0) return;
+                ctx.globalCompositeOperation = "lighter";
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rot);
+                
+                const alpha = this.life;
+                const flicker = 0.8 + Math.random() * 0.2; 
+
+                ctx.beginPath();
+                if (this.isSparkle) {
+                    ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+                } else {
+                    ctx.moveTo(0, -this.size);
+                    ctx.lineTo(this.size * this.widthRatio, this.size);
+                    ctx.lineTo(-this.size * this.widthRatio, this.size);
+                }
+                ctx.closePath();
+
+                ctx.shadowBlur = (this.isSparkle ? 5 : 20) * alpha;
+                ctx.shadowColor = "#00f2ff";
+                
+                ctx.strokeStyle = `rgba(0, 242, 255, ${alpha * flicker})`;
+                ctx.lineWidth = this.isSparkle ? 1 : 1.5;
+                ctx.stroke();
+
+                if (!this.isSparkle) {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.15})`;
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.fill();
+                }
+                ctx.restore();
+                ctx.globalCompositeOperation = "source-over";
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, cv.width, cv.height);
+            shards = shards.filter(s => s.life > 0);
+            shards.forEach(s => { s.update(); s.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // Sự kiện: Bấm chuột hoặc Chạm tay thì nổ
+        window.addEventListener('mousedown', e => {
+            for(let i=0; i<5; i++) shards.push(new NeonShard(e.clientX, e.clientY, false));
+            for(let i=0; i<8; i++) shards.push(new NeonShard(e.clientX, e.clientY, true));
+        });
+        window.addEventListener('touchstart', e => {
+            const t = e.touches[0];
+            for(let i=0; i<5; i++) shards.push(new NeonShard(t.clientX, t.clientY, false));
+            for(let i=0; i<8; i++) shards.push(new NeonShard(t.clientX, t.clientY, true));
+        });
+
+        // ----------------------------------------------------
+        // CÁC HÀM CŨ (GIỮ NGUYÊN)
+        // ----------------------------------------------------
+
         // CODE BỤI CÔNG NGHỆ GỐC
         function createDust() {
             const container = document.getElementById('dust-container');
@@ -272,22 +351,6 @@
         // HÀM CHUYỂN CỔNG GỐC
         function openPortal(taskName) {
             window.location.href = `./index.html?task=${taskName}`;
-        }
-
-        // --- CODE MỚI BỔ SUNG ---
-
-        // 1. LOGIC CHUYỂN TRANG
-        let isPage2 = false;
-        function togglePage() {
-            isPage2 = !isPage2;
-            const container = document.getElementById('page-container');
-            const navBtn = document.getElementById('navBtn');
-            
-            // Trượt ngang
-            container.style.transform = isPage2 ? 'translateX(-100vw)' : 'translateX(0)';
-            
-            // Xoay mũi tên
-            navBtn.classList.toggle('flipped');
         }
 
         // 2. LOGIC ĐỔI NỀN VÒNG LẶP
