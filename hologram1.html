@@ -300,18 +300,18 @@
         }
         createDust();
 
-        // --- 3. LOGIC MỞ CỔNG (SỬA LẠI ĐỂ KHÔNG BỊ LỖI CHUYỂN INDEX) ---
+        // --- 3. LOGIC MỞ CỔNG (ĐÃ FIX: MỞ TRỰC TIẾP, KHÔNG QUA INDEX) ---
         function openPortal(taskName) {
-            if (taskName === 'ai-analyst') {
+            // Mở trực tiếp file biểu đồ
+            if (taskName === 'charts') {
+                window.location.href = './bieudo.html'; 
+            }
+            // Mở trực tiếp file AI
+            else if (taskName === 'ai-analyst') {
                 window.location.href = './lenhAI.html';
-            } 
-            else if (taskName === 'charts') {
-                window.location.href = './bieudo.html'; // Chỉ định rõ file biểu đồ
             }
-            else {
-                // Các task cũ (nếu có) mới quay về index
-                window.location.href = `./index.html?task=${taskName}`;
-            }
+            // Không có nhánh else -> Nếu task khác (chưa làm) thì không làm gì cả
+            // Điều này đảm bảo không bao giờ bị trả về index
         }
 
         // 4. LOGIC ĐỔI NỀN VÒNG LẶP (Giữ nguyên để đồng bộ)
