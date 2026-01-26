@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI SCAN - ANOMALY DETECTION</title>
+    <style>
+        /* --- 1. CSS GIAO DIỆN MỚI (HOLOGRAM 3D) --- */
+        :root {
+            --neon: #00f2ff;
+            --neon-green: #00ff88;
+            --neon-pink: #ff00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            /* Background mặc định là đen, sẽ được JS cập nhật */
+            background: #000 no-repeat center bottom / cover fixed;
+            height: 100vh; width: 100vw;
+            overflow: hidden; /* Khóa cuộn trang để bảng không chạy */
+            font-family: 'Courier New', monospace;
+            color: var(--neon);
+            display: flex; align-items: center; justify-content: center;
+            perspective: 1500px; 
+            touch-action: none; /* Chặn kéo trang */
+            transition: background-image 0.5s ease-in-out;
+        }
+
+        /* LỚP PHỦ MỜ (DIM) TẠO CHIỀU SÂU */
+        .overlay-dim {
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.75); /* Tối 75% */
+            backdrop-filter: blur(5px); /* Làm mờ ảnh nền */
+            z-index: 1; pointer-events: none;
+        }
+
+        /* CONTAINER 3D - CỐ ĐỊNH KÍCH THƯỚC */
+        .hologram-container {
+            position: relative; z-index: 10;
+            width: 95vw; max-width: 800px; 
+            height: 550px; /* Chiều cao cố định để tránh lỗi nhảy khung */
+            transform-style: preserve-3d;
+            animation: float 6s ease-in-out infinite;
+            margin-top: -30px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotateX(5deg) rotateY(-5deg); }
+            50% { transform: translateY(-15px) rotateX(5deg) rotateY(-5deg); }
+        }
+
+        /* MÀN HÌNH CHÍNH */
+        .screen {
+            position: relative; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(0, 242, 255, 0.05), rgba(0, 242, 255, 0.1));
+            border: 2px solid var(--neon);
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.4), inset 0 0 60px rgba(0, 242, 255, 0.2);
+            transform-style: preserve-3d;
+            overflow: hidden; /* Không cho nội dung tràn ra ngoài khung 3D */
+            display: flex; flex-direction: column;
+            clip-path: polygon(
+                20px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px),
+                calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 20px), 0 20px
+            );
+        }
+
+        /* CÁC LỚP TRANG TRÍ */
+        .screen::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 242, 255, 0.03) 2px, rgba(0, 242, 255, 0.03) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 242, 255, 0.03) 2px, rgba(0, 242, 255, 0.03) 4px);
+            pointer-events: none; z-index: 2;
+        }
+
+        .screen::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--neon), transparent);
+            box-shadow: 0 0 20px var(--neon);
+            animation: scan 3s linear infinite; z-index: 3; opacity: 0.6;
+        }
+        @keyframes scan { 
+            0% { transform: translateY(0); } 100% { transform: translateY(600px); } 
+        }
+
+        /* HEADER */
+        .header {
+            position: relative; padding: 15px 30px;
+            border-bottom: 2px solid rgba(0, 242, 255, 0.3);
+            background: rgba(0, 5, 10, 0.85);
+            z-index: 10; flex-shrink: 0; /* Không bị co lại */
+        }
+        .header h1 {
+            font-size: 18px; letter-spacing: 3px;
+            text-shadow: 0 0 10px var(--neon);
+        }
+        .status {
+            font-size: 11px; color: var(--neon-green); margin-top: 5px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .status::before {
+            content: ''; width: 6px; height: 6px; background: var(--neon-green);
+            border-radius: 50%; box-shadow: 0 0 8px var(--neon-green); animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.3; } }
+
+        /* CONTENT - VÙNG CUỘN DUY NHẤT */
+        .content {
+            padding: 20px 30px; flex-grow: 1; 
+            overflow-y: auto; /* Cho phép cuộn dọc */
+            position: relative; z-index: 4;
+            touch-action: pan-y; /* Cho phép vuốt dọc */
+            -webkit-overflow-scrolling: touch; /* Mượt mà trên iOS */
+        }
+        .content::-webkit-scrollbar { width: 4px; }
+        .content::-webkit-scrollbar-thumb { background: var(--neon); }
+
+        /* TEXT LINE */
+        .line {
+            margin-bottom: 10px; font-size: 13px; letter-spacing: 1px;
+            text-shadow: 0 0 5px var(--neon); opacity: 0;
+            transform: translateX(-10px); animation: text-appear 0.3s forwards;
+        }
+        @keyframes text-appear { to { opacity: 1; transform: translateX(0); } }
+
+        .line.success { color: var(--neon-green); }
+        .line.error { color: #ff0066; font-weight: bold; } 
+        .line.highlight { color: var(--neon-pink); font-weight: bold; }
+        .line.system { color: #888; font-style: italic; }
+
+        .cursor::after { content: '▋'; animation: blink 1s infinite; color: var(--neon); }
+
+        /* CÁC GÓC TRANG TRÍ */
+        .corner { position: absolute; width: 30px; height: 30px; border: 2px solid var(--neon); z-index: 5; pointer-events: none; }
+        .corner.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; clip-path: polygon(0 0, 100% 0, 0 100%); }
+        .corner.tr { top: -2px; right: -2px; border-left: none; border-bottom: none; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+        .corner.bl { bottom: -2px; left: -2px; border-right: none; border-top: none; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+        .corner.br { bottom: -2px; right: -2px; border-left: none; border-top: none; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+
+        .depth-layer { position: absolute; width: 100%; height: 100%; border: 1px solid rgba(0, 242, 255, 0.1); pointer-events: none; clip-path: inherit; }
+        .depth-layer.l1 { transform: translateZ(-10px); opacity: 0.3; }
+        .depth-layer.l2 { transform: translateZ(-20px); opacity: 0.2; }
+        .depth-layer.l3 { transform: translateZ(-30px); opacity: 0.1; }
+
+        /* PARTICLES */
+        .particle {
+            position: fixed; width: 2px; height: 2px; background: var(--neon);
+            border-radius: 50%; pointer-events: none; z-index: 2;
+            animation: particle-float 15s linear infinite;
+        }
+        @keyframes particle-float {
+            0% { transform: translate(0, 100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; } 90% { opacity: 1; }
+            100% { transform: translate(200px, -100px) rotate(360deg); opacity: 0; }
+        }
+
+        /* NÚT BACK */
+        .back-circle {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 50px; height: 50px; border: 1px solid var(--neon); border-radius: 50%;
+            background: rgba(0, 5, 10, 0.8); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 100; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+        .back-circle svg { width: 24px; height: 24px; fill: none; stroke: var(--neon); stroke-width: 2; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay-dim"></div>
+
+    <script>
+        // Tạo hạt bụi
+        for(let i = 0; i < 30; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDelay = Math.random() * 15 + 's';
+            p.style.animationDuration = (Math.random() * 10 + 10) + 's';
+            document.body.appendChild(p);
+        }
+    </script>
+
+    <div class="hologram-container">
+        <div class="depth-layer l1"></div>
+        <div class="depth-layer l2"></div>
+        <div class="depth-layer l3"></div>
+
+        <div class="screen">
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
+
+            <div class="header">
+                <h1>AI SCANNER V1.0</h1>
+                <div class="status">HỆ THỐNG ĐANG HOẠT ĐỘNG</div>
+            </div>
+
+            <div class="content" id="output"></div>
+        </div>
+    </div>
+
+    <div class="back-circle" onclick="window.location.href='./lenhAI.html'">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </div>
+
+    <script>
+        // --- 1. LẤY BACKGROUND TỪ SẢNH ---
+        window.onload = function() {
+            const savedBg = localStorage.getItem('user_lobby_bg');
+            if (savedBg) {
+                document.body.style.backgroundImage = `url('./${savedBg}')`;
+            } else {
+                document.body.style.backgroundImage = `url('./farfuture01.png')`;
+            }
+            runAnalysis();
+        };
+
+        // --- 2. LOGIC PHÂN TÍCH (GIỮ NGUYÊN) ---
+        const API_PATH = './API/gemini1-5flash'; 
+        const output = document.getElementById('output');
+        
+        function printLine(text, type = 'normal', delay = 0) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    let newType = type;
+                    if (type === 'warn') newType = 'error'; 
+                    
+                    div.className = `line ${newType}`;
+                    div.innerHTML = text; 
+                    output.appendChild(div);
+                    output.scrollTop = output.scrollHeight; 
+                    resolve();
+                }, delay);
+            });
+        }
+
+        async function runAnalysis() {
+            await printLine("> Đang kết nối giao thức bảo mật...", "system", 200);
+            await printLine(`> Đang gọi module: ${API_PATH}`, "system", 300);
+            await printLine("> Đang truy cập cơ sở dữ liệu LocalStorage...", "normal", 500);
+
+            const rawData = localStorage.getItem('app_data_v4');
+            const appData = rawData ? JSON.parse(rawData) : { wallets: [] };
+            const wallets = appData.wallets || [];
+
+            if (wallets.length === 0) {
+                await printLine("LỖI: Không tìm thấy dữ liệu ví.", "error", 800);
+                await printLine("> Gợi ý: Truy cập [PHÂN BỔ] để tạo ví mới.", "highlight", 1000);
+                return;
+            }
+
+            await printLine(`> Phát hiện ${wallets.length} thực thể ví.`, "success", 800);
+            await printLine("> Đang quét tìm điểm bất thường...", "normal", 1000);
+
+            let anomalyCount = 0;
+            // Quét lạm chi
+            for (let w of wallets) {
+                if (w.spent > w.alloc) {
+                    anomalyCount++;
+                    const over = (w.spent - w.alloc) * 1000;
+                    await printLine(`⚠ CẢNH BÁO: [${w.name}] lạm chi ${over.toLocaleString()} VNĐ`, "error", 1200 + (anomalyCount*300));
+                }
+            }
+
+            // Quét không ghi chú
+            for (let w of wallets) {
+                if (w.spent > 0 && (!w.note || w.note.trim() === "")) {
+                    await printLine(`⚠ LƯU Ý: [${w.name}] đang tiêu không ghi chú. Độ tin cậy: THẤP.`, "system", 1500);
+                }
+            }
+
+            await printLine("----------------------------------------", "system", 1800);
+            
+            if (anomalyCount === 0) {
+                await printLine("HỆ THỐNG ỔN ĐỊNH. Không có lỗi nghiêm trọng.", "success", 2000);
+                await printLine("> Đề xuất: Duy trì tốc độ chi tiêu hiện tại.", "highlight", 2200);
+            } else {
+                await printLine(`NGUY HIỂM: Phát hiện ${anomalyCount} bất thường cần xử lý.`, "error", 2000);
+                await printLine("> Đề xuất: Kích hoạt giao thức [Tái Phân Bổ] ngay lập tức.", "highlight", 2200);
+            }
+
+            await printLine("> Đang chờ lệnh người dùng... <span class='cursor'></span>", "normal", 2500);
+        }
+    </script>
+</body>
+</html>
