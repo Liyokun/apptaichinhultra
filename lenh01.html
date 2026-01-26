@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI SCAN - ANOMALY DETECTION</title>
     <style>
-        /* --- 1. CSS GIAO DIỆN MỚI (HOLOGRAM 3D) --- */
+        /* --- 1. CẤU HÌNH GIAO DIỆN --- */
         :root {
             --neon: #00f2ff;
             --neon-green: #00ff88;
@@ -15,31 +15,28 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            /* Background mặc định là đen, sẽ được JS cập nhật */
             background: #000 no-repeat center bottom / cover fixed;
             height: 100vh; width: 100vw;
-            overflow: hidden; /* Khóa cuộn trang để bảng không chạy */
+            overflow: hidden;
             font-family: 'Courier New', monospace;
             color: var(--neon);
             display: flex; align-items: center; justify-content: center;
-            perspective: 1500px; 
-            touch-action: none; /* Chặn kéo trang */
+            perspective: 1500px;
+            touch-action: none;
             transition: background-image 0.5s ease-in-out;
         }
 
-        /* LỚP PHỦ MỜ (DIM) TẠO CHIỀU SÂU */
         .overlay-dim {
             position: fixed; inset: 0;
-            background: rgba(0, 0, 0, 0.75); /* Tối 75% */
-            backdrop-filter: blur(5px); /* Làm mờ ảnh nền */
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
             z-index: 1; pointer-events: none;
         }
 
-        /* CONTAINER 3D - CỐ ĐỊNH KÍCH THƯỚC */
         .hologram-container {
             position: relative; z-index: 10;
-            width: 95vw; max-width: 800px; 
-            height: 550px; /* Chiều cao cố định để tránh lỗi nhảy khung */
+            width: 90vw; max-width: 700px; 
+            height: 500px;
             transform-style: preserve-3d;
             animation: float 6s ease-in-out infinite;
             margin-top: -30px;
@@ -50,14 +47,13 @@
             50% { transform: translateY(-15px) rotateX(5deg) rotateY(-5deg); }
         }
 
-        /* MÀN HÌNH CHÍNH */
         .screen {
             position: relative; width: 100%; height: 100%;
             background: linear-gradient(135deg, rgba(0, 242, 255, 0.05), rgba(0, 242, 255, 0.1));
             border: 2px solid var(--neon);
             box-shadow: 0 0 40px rgba(0, 242, 255, 0.4), inset 0 0 60px rgba(0, 242, 255, 0.2);
             transform-style: preserve-3d;
-            overflow: hidden; /* Không cho nội dung tràn ra ngoài khung 3D */
+            overflow: hidden;
             display: flex; flex-direction: column;
             clip-path: polygon(
                 20px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px),
@@ -65,7 +61,6 @@
             );
         }
 
-        /* CÁC LỚP TRANG TRÍ */
         .screen::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-image: 
@@ -84,20 +79,44 @@
             0% { transform: translateY(0); } 100% { transform: translateY(600px); } 
         }
 
-        /* HEADER */
         .header {
             position: relative; padding: 15px 30px;
             border-bottom: 2px solid rgba(0, 242, 255, 0.3);
             background: rgba(0, 5, 10, 0.85);
-            z-index: 10; flex-shrink: 0; /* Không bị co lại */
+            z-index: 10; flex-shrink: 0;
         }
         .header h1 {
             font-size: 18px; letter-spacing: 3px;
-            text-shadow: 0 0 10px var(--neon);
+            text-shadow: 
+                0 0 12px var(--neon),
+                0 0 28px var(--neon),
+                0 0 50px var(--neon);
+            animation: glow-text 2s ease-in-out infinite;
+        }
+        @keyframes glow-text {
+            0%, 100% { 
+                text-shadow: 
+                    0 0 12px var(--neon), 
+                    0 0 28px var(--neon),
+                    0 0 50px var(--neon); 
+            }
+            50% { 
+                text-shadow: 
+                    0 0 24px var(--neon), 
+                    0 0 60px var(--neon), 
+                    0 0 100px var(--neon),
+                    0 0 140px rgba(0, 242, 255, 0.6);
+            }
         }
         .status {
-            font-size: 11px; color: var(--neon-green); margin-top: 5px;
+            font-size: 11px; 
+            color: var(--neon-green); 
+            margin-top: 5px;
             display: flex; align-items: center; gap: 8px;
+            text-shadow: 
+                0 0 7px var(--neon-green),
+                0 0 14px var(--neon-green),
+                0 0 24px rgba(0, 255, 136, 0.7);
         }
         .status::before {
             content: ''; width: 6px; height: 6px; background: var(--neon-green);
@@ -105,33 +124,73 @@
         }
         @keyframes blink { 50% { opacity: 0.3; } }
 
-        /* CONTENT - VÙNG CUỘN DUY NHẤT */
         .content {
             padding: 20px 30px; flex-grow: 1; 
-            overflow-y: auto; /* Cho phép cuộn dọc */
+            overflow-y: auto;
             position: relative; z-index: 4;
-            touch-action: pan-y; /* Cho phép vuốt dọc */
-            -webkit-overflow-scrolling: touch; /* Mượt mà trên iOS */
+            touch-action: pan-y;
+            -webkit-overflow-scrolling: touch;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
-        .content::-webkit-scrollbar { width: 4px; }
-        .content::-webkit-scrollbar-thumb { background: var(--neon); }
+        .content::-webkit-scrollbar { 
+            display: none; 
+        }
 
-        /* TEXT LINE */
         .line {
             margin-bottom: 10px; font-size: 13px; letter-spacing: 1px;
-            text-shadow: 0 0 5px var(--neon); opacity: 0;
+            text-shadow: 
+                0 0 6px var(--neon),
+                0 0 14px var(--neon),
+                0 0 24px rgba(0, 242, 255, 0.8);
+            opacity: 0;
             transform: translateX(-10px); animation: text-appear 0.3s forwards;
         }
         @keyframes text-appear { to { opacity: 1; transform: translateX(0); } }
 
-        .line.success { color: var(--neon-green); }
-        .line.error { color: #ff0066; font-weight: bold; } 
-        .line.highlight { color: var(--neon-pink); font-weight: bold; }
-        .line.system { color: #888; font-style: italic; }
+        .line.success {
+            color: var(--neon-green);
+            text-shadow: 
+                0 0 8px var(--neon-green),
+                0 0 18px var(--neon-green),
+                0 0 32px rgba(0, 255, 136, 0.85);
+        }
 
-        .cursor::after { content: '▋'; animation: blink 1s infinite; color: var(--neon); }
+        .line.error {
+            color: #ff0066;
+            font-weight: bold;
+            text-shadow: 
+                0 0 9px #ff0066,
+                0 0 20px #ff0066,
+                0 0 38px rgba(255, 0, 102, 0.8);
+        }
 
-        /* CÁC GÓC TRANG TRÍ */
+        .line.highlight {
+            color: var(--neon-pink);
+            font-weight: bold;
+            text-shadow: 
+                0 0 10px var(--neon-pink),
+                0 0 24px var(--neon-pink),
+                0 0 45px rgba(255, 0, 255, 0.8);
+        }
+
+        .line.system {
+            color: #ffffff;
+            font-style: italic;
+            text-shadow: 
+                0 0 5px rgba(136, 136, 136, 0.9),
+                0 0 10px rgba(136, 136, 136, 0.6);
+        }
+
+        .cursor::after { 
+            content: '▋'; 
+            animation: blink 1s infinite; 
+            color: var(--neon);
+            text-shadow: 
+                0 0 9px var(--neon),
+                0 0 18px var(--neon);
+        }
+
         .corner { position: absolute; width: 30px; height: 30px; border: 2px solid var(--neon); z-index: 5; pointer-events: none; }
         .corner.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; clip-path: polygon(0 0, 100% 0, 0 100%); }
         .corner.tr { top: -2px; right: -2px; border-left: none; border-bottom: none; clip-path: polygon(0 0, 100% 0, 100% 100%); }
@@ -143,7 +202,6 @@
         .depth-layer.l2 { transform: translateZ(-20px); opacity: 0.2; }
         .depth-layer.l3 { transform: translateZ(-30px); opacity: 0.1; }
 
-        /* PARTICLES */
         .particle {
             position: fixed; width: 2px; height: 2px; background: var(--neon);
             border-radius: 50%; pointer-events: none; z-index: 2;
@@ -155,7 +213,6 @@
             100% { transform: translate(200px, -100px) rotate(360deg); opacity: 0; }
         }
 
-        /* NÚT BACK */
         .back-circle {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             width: 50px; height: 50px; border: 1px solid var(--neon); border-radius: 50%;
@@ -171,7 +228,6 @@
     <div class="overlay-dim"></div>
 
     <script>
-        // Tạo hạt bụi
         for(let i = 0; i < 30; i++) {
             const p = document.createElement('div');
             p.className = 'particle';
@@ -207,7 +263,6 @@
     </div>
 
     <script>
-        // --- 1. LẤY BACKGROUND TỪ SẢNH ---
         window.onload = function() {
             const savedBg = localStorage.getItem('user_lobby_bg');
             if (savedBg) {
@@ -218,8 +273,6 @@
             runAnalysis();
         };
 
-        // --- 2. LOGIC PHÂN TÍCH (GIỮ NGUYÊN) ---
-        const API_PATH = './API/gemini1-5flash'; 
         const output = document.getElementById('output');
         
         function printLine(text, type = 'normal', delay = 0) {
@@ -240,33 +293,29 @@
 
         async function runAnalysis() {
             await printLine("> Đang kết nối giao thức bảo mật...", "system", 200);
-            await printLine(`> Đang gọi module: ${API_PATH}`, "system", 300);
-            await printLine("> Đang truy cập cơ sở dữ liệu LocalStorage...", "normal", 500);
+            await printLine("> Đang truy xuất dữ liệu LocalStorage...", "system", 300);
 
             const rawData = localStorage.getItem('app_data_v4');
             const appData = rawData ? JSON.parse(rawData) : { wallets: [] };
             const wallets = appData.wallets || [];
 
             if (wallets.length === 0) {
-                await printLine("LỖI: Không tìm thấy dữ liệu ví.", "error", 800);
-                await printLine("> Gợi ý: Truy cập [PHÂN BỔ] để tạo ví mới.", "highlight", 1000);
+                await printLine("⚠ LỖI: Dữ liệu trống.", "error", 500);
                 return;
             }
 
-            await printLine(`> Phát hiện ${wallets.length} thực thể ví.`, "success", 800);
-            await printLine("> Đang quét tìm điểm bất thường...", "normal", 1000);
+            await printLine(`> Phát hiện ${wallets.length} thực thể ví.`, "success", 500);
+            await printLine("> Bắt đầu quét lạm chi...", "normal", 800);
 
             let anomalyCount = 0;
-            // Quét lạm chi
             for (let w of wallets) {
                 if (w.spent > w.alloc) {
                     anomalyCount++;
                     const over = (w.spent - w.alloc) * 1000;
-                    await printLine(`⚠ CẢNH BÁO: [${w.name}] lạm chi ${over.toLocaleString()} VNĐ`, "error", 1200 + (anomalyCount*300));
+                    await printLine(`⚠ CẢNH BÁO: [${w.name}] lạm chi ${over.toLocaleString()} VNĐ`, "error", 1000);
                 }
             }
 
-            // Quét không ghi chú
             for (let w of wallets) {
                 if (w.spent > 0 && (!w.note || w.note.trim() === "")) {
                     await printLine(`⚠ LƯU Ý: [${w.name}] đang tiêu không ghi chú. Độ tin cậy: THẤP.`, "system", 1500);

@@ -133,7 +133,7 @@
     
     <canvas id="explosion-canvas"></canvas>
 
-    <div class="header"><h1>DATA & AI</h1></div>
+    <div class="header"><h1> SYSTEM CORE </h1></div>
     <div id="dust-container"></div>
 
     <div class="ctrl-btn btn-left" id="bgBtn" onclick="changeBackground()">
@@ -182,7 +182,7 @@
                         </div>
                     </div>
 
-                    </div>
+                </div>
             </div>
 
         </div>
@@ -302,9 +302,13 @@
         }
         createDust();
 
-        // 3. LOGIC MỞ CỔNG (Giữ nguyên để tương thích nếu cần)
+        // 3. LOGIC MỞ CỔNG - ĐÃ SỬA CHỈ RIÊNG TASK PHÂN TÍCH AI
         function openPortal(taskName) {
-            window.location.href = `./index.html?task=${taskName}`;
+            if (taskName === 'ai-analyst') {
+                window.location.href = './lenhAI.html';
+            } else {
+                window.location.href = `./index.html?task=${taskName}`;
+            }
         }
 
         // 4. LOGIC ĐỔI NỀN VÒNG LẶP (Giữ nguyên để đồng bộ)
