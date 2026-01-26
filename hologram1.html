@@ -156,10 +156,11 @@
 
     <div id="viewport">
         <div id="page-container">
+            
             <div class="page">
                 <div class="grid">
                     
-                    <div class="task-wrapper" onclick="openPortal('charts')">
+                    <div class="task-wrapper" onclick="window.location.href='https://liyokun.github.io/apptaichinhultra/bieudo.html'">
                         <svg class="svg-container" viewBox="-20 -20 240 160">
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
@@ -170,7 +171,7 @@
                         </div>
                     </div>
 
-                    <div class="task-wrapper" onclick="openPortal('ai-analyst')">
+                    <div class="task-wrapper" onclick="window.location.href='https://liyokun.github.io/apptaichinhultra/lenhAI.html'">
                         <svg class="svg-container" viewBox="-20 -20 240 160">
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
@@ -183,6 +184,7 @@
 
                 </div>
             </div>
+
         </div>
     </div>
 
@@ -300,19 +302,8 @@
         }
         createDust();
 
-        // --- 3. LOGIC MỞ CỔNG (ĐÃ FIX: MỞ TRỰC TIẾP, KHÔNG QUA INDEX) ---
-        function openPortal(taskName) {
-            // Mở trực tiếp file biểu đồ
-            if (taskName === 'charts') {
-                window.location.href = './bieudo.html'; 
-            }
-            // Mở trực tiếp file AI
-            else if (taskName === 'ai-analyst') {
-                window.location.href = './lenhAI.html';
-            }
-            // Không có nhánh else -> Nếu task khác (chưa làm) thì không làm gì cả
-            // Điều này đảm bảo không bao giờ bị trả về index
-        }
+        // 3. LOGIC MỞ CỔNG - ĐÃ SỬA: MỞ THẲNG URL ĐẦY ĐỦ, KHÔNG DÙNG HÀM openPortal NỮA
+        // Không cần hàm openPortal nữa vì đã chuyển sang onclick trực tiếp với URL tuyệt đối
 
         // 4. LOGIC ĐỔI NỀN VÒNG LẶP (Giữ nguyên để đồng bộ)
         const bgFiles = [
