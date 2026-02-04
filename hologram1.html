@@ -2,34 +2,112 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYSTEM CORE - EXTENDED</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SYSTEM CORE - LOBBY</title>
+    
+    <link rel="stylesheet" href="avatarframe.css">
+    <script src="nguoigaccong.js"></script>
+    <script src="avatarframe.js"></script>
+
     <style>
-        /* --- GIỮ NGUYÊN CSS GỐC CỦA BẠN (KHÔNG SỬA ĐỔI) --- */
+        /* --- GIỮ NGUYÊN CSS GỐC CỦA BẠN --- */
         :root { --neon: #00f2ff; }
+        
         body, html { 
             margin: 0; padding: 0; height: 100%; width: 100%;
             background: #02050a url('./farfuture01.png') center bottom / cover no-repeat fixed;
             font-family: 'Segoe UI', sans-serif; color: #fff; 
-            overflow: hidden; 
+            
+            /* --- CÁC LỆNH KHÓA MÀN HÌNH (ĐÃ THÊM) --- */
+            overflow: hidden !important;      /* Cắt bỏ mọi phần dư thừa */
+            overflow-x: hidden !important;    /* Chặn tuyệt đối kéo ngang */
+            overflow-y: hidden !important;    /* Chặn tuyệt đối kéo dọc */
+            position: fixed;                  /* Ghim chặt body, chống kéo lò xo */
+            touch-action: none;               /* Tắt cảm ứng vuốt cuộn */
+            overscroll-behavior: none;        /* Tắt hiệu ứng nảy trang */
+            
             transition: background-image 0.5s ease-in-out;
         }
 
+        /* --- BỔ SUNG CSS CHO HIỆU ỨNG NỔ --- */
         #explosion-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 100; 
+            pointer-events: none; 
+            z-index: 100; 
         }
         
-        .header {
-            position: absolute; top: 40px; width: 100%; text-align: center; z-index: 20;
-            pointer-events: none;
+        /* --- KHUNG HUD MỚI --- */
+        #hud-container {
+            position: absolute; 
+            top: -20px; 
+            left: 32%; 
+            transform: translateX(-50%); 
+            width: 500px; 
+            
+            /* Thêm max-width để đảm bảo không bị bung ngang trên màn hình nhỏ */
+            max-width: 100%; 
+            
+            height: 200px; 
+            z-index: 20;
+            pointer-events: none; 
         }
-        .header h1 {
-            margin: 0; font-size: 24px; letter-spacing: 6px; color: var(--neon);
-            text-shadow: 0 0 15px var(--neon); text-transform: uppercase;
-            font-weight: 300; border: 1px solid rgba(0, 242, 255, 0.3);
-            display: inline-block; padding: 10px 30px; border-radius: 40px;
-            background: rgba(0, 5, 10, 0.6); backdrop-filter: blur(4px);
+
+        #hudCanvas {
+            position: absolute; top: 0; left: 0;
+            filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.2));
+        }
+
+        /* Vùng chứa Avatar + Frame (ĐÃ CẬP NHẬT ONCLICK) */
+        #profile-trigger {
+            position: absolute;
+            /* Tọa độ tính toán dựa trên Canvas: cx=150, cy=100. Size 100x100 để nằm gọn trong r=60 */
+            top: 50px; 
+            left: 100px; 
+            width: 100px; 
+            height: 100px; 
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto; 
+            z-index: 25;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #hud-avatar-img {
+            width: 100%; height: 100%; 
+            border-radius: 50%; 
+            object-fit: cover;
+            display: none; 
+            position: relative; 
+            z-index: 1;
+        }
+
+        /* Container cho Frame (Đè lên ảnh) - ĐÃ SỬA LỖI SIZE */
+        #hud-frame-target {
+            position: absolute;
+            top: 50%; left: 50%;
+            /* Fix lỗi to: Scale nhỏ lại 0.85 và căn giữa tuyệt đối */
+            transform: translate(-50%, -50%) scale(0.85); 
+            width: 140px; height: 140px;
+            pointer-events: none;
+            z-index: 2;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* Chữ System Core nằm trong thanh HUD */
+        .hud-text {
+            position: absolute;
+            top: 92px;
+            left: 235px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 14px;
+            width: 250px; 
+            letter-spacing: 4px;
+            color: var(--neon);
+            text-shadow: 0 0 8px var(--neon);
+            pointer-events: none;
         }
 
         #dust-container {
@@ -50,10 +128,12 @@
             100% { transform: translateY(-20vh) scale(1); opacity: 0; }
         }
 
+        /* Task Wrapper GỐC */
         .task-wrapper {
             position: relative; width: 100%; height: 110px;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .svg-container {
@@ -81,33 +161,32 @@
         .task-wrapper:hover .label { text-shadow: 0 0 15px var(--neon); }
         .task-wrapper:active .core-beam { stroke: #fff; filter: url(#strongGlow); }
 
-        /* VIEWPORT & PAGE (Đã chỉnh sửa để bỏ slider) */
+        /* --- PHẦN BỔ SUNG MỚI --- */
+        
         #viewport {
-            width: 100vw; height: 100%;
+            width: 100vw; height: 100vh; /* Khóa cứng chiều cao */
             overflow: hidden; position: relative; z-index: 10;
         }
         
         #page-container {
-            display: flex; width: 100vw; /* Chỉ còn 1 trang nên để 100vw */
-            height: 100%;
+            display: flex; width: 100vw; height: 100%;
         }
 
         .page {
             width: 100vw; height: 100%;
             display: flex; flex-direction: column; align-items: center;
-            overflow-y: auto; 
+            overflow: hidden; /* Chặn cuộn trang con */
         }
 
         .grid {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px 20px; 
             width: 90%; max-width: 500px; 
-            margin: 120px auto 100px auto; 
+            margin: 150px auto 100px auto; 
             position: relative;
         }
 
-        /* Nút điều khiển */
         .ctrl-btn {
-            position: fixed; bottom: 30px; width: 55px; height: 55px;
+            position: fixed; bottom: 40px; width: 55px; height: 55px;
             border: 1px solid var(--neon); border-radius: 50%;
             background: rgba(0, 5, 10, 0.6); backdrop-filter: blur(4px);
             display: flex; align-items: center; justify-content: center;
@@ -122,26 +201,31 @@
         .btn-left { left: 30px; }
         .btn-right { right: 30px; }
         
-        /* Class để quay mũi tên ngược lại (Back) */
-        .arrow-back { transform: rotate(180deg); }
-        .spin { animation: spin 0.5s ease; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
     </style>
 </head>
 <body>
     
     <canvas id="explosion-canvas"></canvas>
 
-    <div class="header"><h1> SYSTEM CORE </h1></div>
+    <div id="hud-container">
+        <canvas id="hudCanvas"></canvas>
+        
+        <div id="profile-trigger" onclick="checkProfileAccess()">
+            <img id="hud-avatar-img" src="" alt="Avatar">
+            <div id="hud-frame-target"></div> 
+        </div>
+
+        <div class="hud-text">SYSTEM CORE</div>
+    </div>
+
     <div id="dust-container"></div>
 
-    <div class="ctrl-btn btn-left" id="bgBtn" onclick="changeBackground()">
+    <div class="ctrl-btn btn-left" id="bgBtn" onclick="window.location.href='backgroundchoose.html'">
         <svg viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 0 1 2.828 0L16 16m-2-2l1.586-1.586a2 2 0 0 1 2.828 0L20 14m-6-6h.01M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/></svg>
     </div>
 
-    <div class="ctrl-btn btn-right" onclick="window.location.href='./hologram0.html'">
-        <svg class="arrow-back" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    <div class="ctrl-btn btn-right" id="navBtn" onclick="window.location.href='./hologram1.html'">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </div>
 
     <svg style="position: absolute; width: 0; height: 0; overflow: hidden;">
@@ -151,6 +235,15 @@
 
             <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1"><stop offset="10%" stop-color="white" /><stop offset="40%" stop-color="#222" /><stop offset="60%" stop-color="#222" /><stop offset="90%" stop-color="white" /></linearGradient>
             <mask id="mask1"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad1)" /></mask>
+
+            <linearGradient id="grad2" x1="1" y1="0" x2="0" y2="1"><stop offset="10%" stop-color="white" /><stop offset="40%" stop-color="#222" /><stop offset="60%" stop-color="#222" /><stop offset="90%" stop-color="white" /></linearGradient>
+            <mask id="mask2"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad2)" /></mask>
+
+            <linearGradient id="grad3" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stop-color="white" /><stop offset="30%" stop-color="#111" /><stop offset="70%" stop-color="#111" /><stop offset="95%" stop-color="white" /></linearGradient>
+            <mask id="mask3"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad3)" /></mask>
+
+             <linearGradient id="grad4" x1="0" y1="0" x2="1" y2="0"><stop offset="10%" stop-color="white" /><stop offset="45%" stop-color="#000" /><stop offset="55%" stop-color="#000" /><stop offset="90%" stop-color="white" /></linearGradient>
+            <mask id="mask4"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad4)" /></mask>
         </defs>
     </svg>
 
@@ -159,39 +252,166 @@
             
             <div class="page">
                 <div class="grid">
-                    
-                    <div class="task-wrapper" onclick="window.location.href='https://liyokun.github.io/apptaichinhultra/bieudo.html'">
+                    <div class="task-wrapper" onclick="openPortal('daily')">
                         <svg class="svg-container" viewBox="-20 -20 240 160">
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
                         </svg>
-                        <div class="content">
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 21H3V3"/><path d="M18 17l-6-6-4 4-5-5"/></svg>
-                            <div class="label">DỮ LIỆU SỐ</div>
-                        </div>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><div class="label">NHẬP LIỆU</div></div>
                     </div>
 
-                    <div class="task-wrapper" onclick="window.location.href='https://liyokun.github.io/apptaichinhultra/lenhAI.html'">
+                    <div class="task-wrapper" onclick="openPortal('budget')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask2)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><div class="label">BIẾN ĐỘNG</div></div>
+                    </div>
+
+                    <div class="task-wrapper" onclick="openPortal('status')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask3)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><div class="label">AI SOI VÍ</div></div>
+                    </div>
+
+                    <div class="task-wrapper" onclick="openPortal('history')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask4)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><div class="label">LỊCH SỬ</div></div>
+                    </div>
+
+                    <div class="task-wrapper" onclick="openPortal('alloc')">
                         <svg class="svg-container" viewBox="-20 -20 240 160">
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
                         </svg>
-                        <div class="content">
-                            <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-                            <div class="label">PHÂN TÍCH AI</div>
-                        </div>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><div class="label">PHÂN BỔ</div></div>
                     </div>
 
+                    <div class="task-wrapper" onclick="openPortal('settings')">
+                        <svg class="svg-container" viewBox="-20 -20 240 160">
+                            <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
+                            <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask2)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
+                        </svg>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><div class="label">CÀI ĐẶT</div></div>
+                    </div>
                 </div>
             </div>
-
-        </div>
+            
+            </div>
     </div>
 
     <script>
-        // --- GIỮ NGUYÊN SCRIPT HIỆU ỨNG TỪ HOLOGRAM0 ---
+        // --- 1. SCRIPT VẼ KHUNG HUD (CỦA BẠN) ---
+        const hudCanvas = document.getElementById('hudCanvas');
+        const hudCtx = hudCanvas.getContext('2d');
 
-        // 1. NEON SHARDS (NỔ)
+        const W = 500; 
+        const H = 200; 
+        hudCanvas.width = W; 
+        hudCanvas.height = H;
+
+        const COLOR = "#00f2ff"; 
+
+        function drawHudFrame() {
+            hudCtx.clearRect(0, 0, W, H);
+            
+            const r = 60;        
+            const barH = 55;     
+            const drawingWidth = 320; 
+            
+            const startX = (W - drawingWidth) / 2; 
+            const cy = H / 2;                      
+            const cx = startX + r;                 
+            
+            const barStart = cx + r - 5; 
+            const barLen = startX + drawingWidth - 30;
+
+            // 1. VÒNG TRÒN NỀN MỜ
+            hudCtx.shadowBlur = 0; 
+            hudCtx.strokeStyle = "rgba(0, 242, 255, 0.15)"; 
+            hudCtx.lineWidth = 1;
+            
+            hudCtx.setLineDash([2, 4]); 
+            hudCtx.beginPath();
+            hudCtx.arc(cx, cy, r, 0, Math.PI * 2);
+            hudCtx.stroke();
+
+            hudCtx.setLineDash([]); 
+            hudCtx.beginPath();
+            hudCtx.arc(cx, cy, r - 8, 0, Math.PI * 2);
+            hudCtx.stroke();
+
+            // 2. THANH KHUNG DÀI
+            hudCtx.strokeStyle = COLOR;
+            hudCtx.shadowColor = COLOR;
+            hudCtx.shadowBlur = 10; 
+            hudCtx.lineWidth = 2;
+            hudCtx.lineCap = "round";
+            hudCtx.lineJoin = "round";
+
+            let topY = cy - (barH / 2);
+            let botY = cy + (barH / 2);
+
+            hudCtx.beginPath();
+            hudCtx.moveTo(barStart, topY); 
+            hudCtx.lineTo(barStart + 15, topY); 
+            hudCtx.lineTo(barStart + 25, topY - 5); 
+            hudCtx.lineTo(barLen - 40, topY - 5); 
+            hudCtx.lineTo(barLen - 30, topY); 
+            hudCtx.lineTo(barLen, topY); 
+
+            hudCtx.lineTo(barLen + 15, cy - 8); 
+            hudCtx.lineTo(barLen + 15, cy + 8); 
+            hudCtx.lineTo(barLen, botY); 
+
+            hudCtx.lineTo(barStart + 80, botY); 
+            hudCtx.lineTo(barStart + 70, botY + 5); 
+            hudCtx.lineTo(barStart + 35, botY + 5); 
+            hudCtx.lineTo(barStart + 25, botY); 
+            hudCtx.lineTo(barStart, botY); 
+            hudCtx.stroke();
+
+            // 3. CHI TIẾT PHỤ
+            hudCtx.shadowBlur = 5;
+            hudCtx.lineWidth = 1;
+            hudCtx.beginPath();
+            hudCtx.moveTo(barStart + 40, botY + 12);
+            hudCtx.lineTo(barStart + 100, botY + 12);
+            hudCtx.stroke();
+
+            hudCtx.lineWidth = 2;
+            hudCtx.beginPath();
+            hudCtx.moveTo(barStart + 12, topY + 8);
+            hudCtx.lineTo(barStart + 6, botY - 8);
+            hudCtx.stroke();
+        }
+
+        drawHudFrame();
+
+        // --- 2. SCRIPT TẢI AVATAR & FRAME (CẮT DÁN TỪ PROFILEBASIC) ---
+        function loadLobbyAvatar() {
+            // Lấy ảnh từ LocalStorage
+            const savedAvatar = localStorage.getItem('USER_AVATAR_BASE64');
+            const img = document.getElementById('hud-avatar-img');
+            
+            if (savedAvatar) {
+                img.src = savedAvatar;
+                img.style.display = 'block';
+            }
+
+            // Gọi linh kiện khung Rank (Nếu script avatarframe.js đã load)
+            if (typeof AvatarFrameManager !== 'undefined') {
+                // Render vào div id="hud-frame-target"
+                AvatarFrameManager.render('hud-frame-target');
+            }
+        }
+
+        // --- 3. SCRIPT HIỆU ỨNG MẢNH VỠ (NEON SHARDS) ---
         const cv = document.getElementById("explosion-canvas");
         const ctx = cv.getContext("2d");
         let shards = [];
@@ -283,7 +503,7 @@
             for(let i=0; i<8; i++) shards.push(new NeonShard(t.clientX, t.clientY, true));
         });
 
-        // 2. BỤI CÔNG NGHỆ
+        // 4. BỤI CÔNG NGHỆ
         function createDust() {
             const container = document.getElementById('dust-container');
             const particleCount = 80;
@@ -302,40 +522,58 @@
         }
         createDust();
 
-        // 3. LOGIC MỞ CỔNG - ĐÃ SỬA: MỞ THẲNG URL ĐẦY ĐỦ, KHÔNG DÙNG HÀM openPortal NỮA
-        // Không cần hàm openPortal nữa vì đã chuyển sang onclick trực tiếp với URL tuyệt đối
-
-        // 4. LOGIC ĐỔI NỀN VÒNG LẶP (Giữ nguyên để đồng bộ)
-        const bgFiles = [
-            'farfuture01.png', 
-            'farfuture02.jpg',
-            'farfuture03.jpg',
-            'farfuture04.jpg',
-            'farfuture05.jpg'
-        ];
-        let bgIndex = 0; 
-
-        function changeBackground() {
-            const btn = document.getElementById('bgBtn');
-            btn.classList.add('spin');
-            setTimeout(() => btn.classList.remove('spin'), 500);
-
-            bgIndex = (bgIndex + 1) % bgFiles.length;
-            const nextBg = bgFiles[bgIndex];
-            document.body.style.backgroundImage = `url('./${nextBg}')`;
-            
-            localStorage.setItem('user_lobby_bg', nextBg);
+        function openPortal(taskName) {
+            window.location.href = `./index.html?task=${taskName}`;
+        }
+// --- TRẠM ĐIỀU HÀNH BACKGROUND GHI ĐÈ ---
+window.addEventListener('storage', (e) => {
+    if (e.key === 'AURA_COMMAND_BG' && e.newValue) {
+        const targetBg = e.newValue;
+        
+        // 1. Thực hiện đổi nền ngay lập tức
+        document.body.style.backgroundImage = `url('./${targetBg}')`;
+        
+        // 2. Cập nhật chỉ số Index để nút bấm thủ công không bị lệch vòng lặp (Tùy chọn)
+        if (typeof bgFiles !== 'undefined') {
+            const newIndex = bgFiles.indexOf(targetBg);
+            if (newIndex !== -1) bgIndex = newIndex;
         }
 
+        // 3. Lưu làm nền mặc định bền vững
+        localStorage.setItem('user_lobby_bg', targetBg);
+        
+        console.log("Điều hành: Đã ghi đè nền hệ thống thành -> " + targetBg);
+    }
+});
+
+        // --- HÀM KIỂM TRA TRUY CẬP PROFILE (MỚI BỔ SUNG) ---
+        function checkProfileAccess() {
+            if (typeof NguoiGacCong !== 'undefined') {
+                const identity = NguoiGacCong.traLoiDanhTinh();
+                // Level = 4 (Orchestrator) -> profileultra
+                if (identity.level === 4) {
+                    window.location.href = 'profileultra.html';
+                } else {
+                    // Level 1, 2, 3 -> profilebasic
+                    window.location.href = 'profilebasic.html';
+                }
+            } else {
+                window.location.href = 'profilebasic.html';
+            }
+        }
+
+        // 5. LOAD ẢNH NỀN KHI KHỞI ĐỘNG (Logic cũ)
         window.onload = function() {
+            // Load Background
             const savedBg = localStorage.getItem('user_lobby_bg');
             if (savedBg) {
                 document.body.style.backgroundImage = `url('./${savedBg}')`;
-                bgIndex = bgFiles.indexOf(savedBg);
-                if (bgIndex === -1) bgIndex = 0;
             } else {
-                document.body.style.backgroundImage = `url('./${bgFiles[0]}')`;
+                document.body.style.backgroundImage = `url('./farfuture01.png')`;
             }
+
+            // Load Avatar & Frame
+            loadLobbyAvatar();
         };
     </script>
 </body>
