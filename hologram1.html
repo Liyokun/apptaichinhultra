@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SYSTEM CORE - LOBBY</title>
+    <title>SYSTEM CORE - EXTENDED</title>
     
     <link rel="stylesheet" href="avatarframe.css">
     <script src="nguoigaccong.js"></script>
@@ -18,22 +18,20 @@
             background: #02050a url('./farfuture01.png') center bottom / cover no-repeat fixed;
             font-family: 'Segoe UI', sans-serif; color: #fff; 
             
-            /* --- CÁC LỆNH KHÓA MÀN HÌNH (ĐÃ THÊM) --- */
-            overflow: hidden !important;      /* Cắt bỏ mọi phần dư thừa */
-            overflow-x: hidden !important;    /* Chặn tuyệt đối kéo ngang */
-            overflow-y: hidden !important;    /* Chặn tuyệt đối kéo dọc */
-            position: fixed;                  /* Ghim chặt body, chống kéo lò xo */
-            touch-action: none;               /* Tắt cảm ứng vuốt cuộn */
-            overscroll-behavior: none;        /* Tắt hiệu ứng nảy trang */
+            /* --- CÁC LỆNH KHÓA MÀN HÌNH --- */
+            overflow: hidden !important;      
+            overflow-x: hidden !important;    
+            overflow-y: hidden !important;    
+            position: fixed;                  
+            touch-action: none;               
+            overscroll-behavior: none;        
             
             transition: background-image 0.5s ease-in-out;
         }
 
-        /* --- BỔ SUNG CSS CHO HIỆU ỨNG NỔ --- */
         #explosion-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; 
-            z-index: 100; 
+            pointer-events: none; z-index: 100; 
         }
         
         /* --- KHUNG HUD MỚI --- */
@@ -43,10 +41,7 @@
             left: 32%; 
             transform: translateX(-50%); 
             width: 500px; 
-            
-            /* Thêm max-width để đảm bảo không bị bung ngang trên màn hình nhỏ */
             max-width: 100%; 
-            
             height: 200px; 
             z-index: 20;
             pointer-events: none; 
@@ -57,10 +52,8 @@
             filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.2));
         }
 
-        /* Vùng chứa Avatar + Frame (ĐÃ CẬP NHẬT ONCLICK) */
         #profile-trigger {
             position: absolute;
-            /* Tọa độ tính toán dựa trên Canvas: cx=150, cy=100. Size 100x100 để nằm gọn trong r=60 */
             top: 50px; 
             left: 100px; 
             width: 100px; 
@@ -83,11 +76,9 @@
             z-index: 1;
         }
 
-        /* Container cho Frame (Đè lên ảnh) - ĐÃ SỬA LỖI SIZE */
         #hud-frame-target {
             position: absolute;
             top: 50%; left: 50%;
-            /* Fix lỗi to: Scale nhỏ lại 0.85 và căn giữa tuyệt đối */
             transform: translate(-50%, -50%) scale(0.85); 
             width: 140px; height: 140px;
             pointer-events: none;
@@ -95,7 +86,6 @@
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* Chữ System Core nằm trong thanh HUD */
         .hud-text {
             position: absolute;
             top: 92px;
@@ -128,7 +118,6 @@
             100% { transform: translateY(-20vh) scale(1); opacity: 0; }
         }
 
-        /* Task Wrapper GỐC */
         .task-wrapper {
             position: relative; width: 100%; height: 110px;
             display: flex; align-items: center; justify-content: center;
@@ -161,10 +150,8 @@
         .task-wrapper:hover .label { text-shadow: 0 0 15px var(--neon); }
         .task-wrapper:active .core-beam { stroke: #fff; filter: url(#strongGlow); }
 
-        /* --- PHẦN BỔ SUNG MỚI --- */
-        
         #viewport {
-            width: 100vw; height: 100vh; /* Khóa cứng chiều cao */
+            width: 100vw; height: 100vh; 
             overflow: hidden; position: relative; z-index: 10;
         }
         
@@ -175,7 +162,7 @@
         .page {
             width: 100vw; height: 100%;
             display: flex; flex-direction: column; align-items: center;
-            overflow: hidden; /* Chặn cuộn trang con */
+            overflow: hidden; 
         }
 
         .grid {
@@ -200,6 +187,62 @@
         
         .btn-left { left: 30px; }
         .btn-right { right: 30px; }
+
+        /* --- CSS CHO POPUP NEON --- */
+        #devModal, #warningModal {
+            display: none; /* Ẩn mặc định */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 5, 10, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            align-items: center; justify-content: center;
+            flex-direction: column;
+        }
+        .modal-box {
+            width: 80%; max-width: 320px;
+            padding: 25px;
+            border: 1px solid var(--neon);
+            background: rgba(0, 20, 30, 0.9);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2), inset 0 0 10px rgba(0, 242, 255, 0.1);
+            text-align: center;
+            position: relative;
+            transform: scale(0.9);
+            animation: modalPop 0.3s forwards;
+        }
+        
+        /* --- STYLE RIÊNG CHO CẢNH BÁO ĐỎ --- */
+        .modal-box.warning {
+            border: 1px solid #ff4444; 
+            background: rgba(20, 0, 0, 0.95);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.2), inset 0 0 10px rgba(255, 0, 0, 0.1);
+        }
+        .modal-box.warning h2 {
+            color: #ff4444; 
+            text-shadow: 0 0 10px #ff0000;
+            border-bottom: 1px dashed rgba(255, 68, 68, 0.3);
+        }
+
+        @keyframes modalPop { to { transform: scale(1); } }
+        
+        .modal-box h2 {
+            margin: 0 0 15px 0; color: var(--neon); 
+            font-size: 18px; letter-spacing: 2px; text-transform: uppercase;
+            text-shadow: 0 0 10px var(--neon);
+            border-bottom: 1px dashed rgba(0, 242, 255, 0.3);
+            padding-bottom: 10px;
+        }
+        .modal-box p {
+            font-size: 13px; color: #ccc; line-height: 1.5; margin-bottom: 25px;
+        }
+        .modal-btn {
+            background: transparent; border: 1px solid var(--neon);
+            color: var(--neon); padding: 10px 20px;
+            font-family: inherit; font-weight: bold; cursor: pointer;
+            transition: 0.3s; text-transform: uppercase;
+        }
+        .modal-btn:hover, .modal-btn:active {
+            background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon);
+        }
         
     </style>
 </head>
@@ -220,12 +263,28 @@
 
     <div id="dust-container"></div>
 
-    <div class="ctrl-btn btn-left" id="bgBtn" onclick="window.location.href='backgroundchoose.html'">
-        <svg viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 0 1 2.828 0L16 16m-2-2l1.586-1.586a2 2 0 0 1 2.828 0L20 14m-6-6h.01M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/></svg>
+    <div class="ctrl-btn btn-left" onclick="window.location.href='hologram0.html'">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </div>
 
-    <div class="ctrl-btn btn-right" id="navBtn" onclick="window.location.href='./hologram1.html'">
+    <div class="ctrl-btn btn-right" onclick="showDevModal()">
         <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </div>
+
+    <div id="devModal">
+        <div class="modal-box">
+            <h2>THÔNG BÁO HỆ THỐNG</h2>
+            <p>Tính năng này đang được phát triển.<br>Vui lòng quay lại sau!</p>
+            <button class="modal-btn" onclick="closeDevModal()">ĐÃ RÕ 🐡✌</button>
+        </div>
+    </div>
+
+    <div id="warningModal">
+        <div class="modal-box warning">
+            <h2>QUYỀN HẠN KHÔNG ĐỦ</h2>
+            <p id="warningMsg">Bạn cần nâng cấp quyền hạn để truy cập.</p>
+            <button class="modal-btn" onclick="closeWarningModal()">ĐÃ RÕ</button>
+        </div>
     </div>
 
     <svg style="position: absolute; width: 0; height: 0; overflow: hidden;">
@@ -235,13 +294,10 @@
 
             <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1"><stop offset="10%" stop-color="white" /><stop offset="40%" stop-color="#222" /><stop offset="60%" stop-color="#222" /><stop offset="90%" stop-color="white" /></linearGradient>
             <mask id="mask1"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad1)" /></mask>
-
             <linearGradient id="grad2" x1="1" y1="0" x2="0" y2="1"><stop offset="10%" stop-color="white" /><stop offset="40%" stop-color="#222" /><stop offset="60%" stop-color="#222" /><stop offset="90%" stop-color="white" /></linearGradient>
             <mask id="mask2"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad2)" /></mask>
-
             <linearGradient id="grad3" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stop-color="white" /><stop offset="30%" stop-color="#111" /><stop offset="70%" stop-color="#111" /><stop offset="95%" stop-color="white" /></linearGradient>
             <mask id="mask3"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad3)" /></mask>
-
              <linearGradient id="grad4" x1="0" y1="0" x2="1" y2="0"><stop offset="10%" stop-color="white" /><stop offset="45%" stop-color="#000" /><stop offset="55%" stop-color="#000" /><stop offset="90%" stop-color="white" /></linearGradient>
             <mask id="mask4"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad4)" /></mask>
         </defs>
@@ -252,299 +308,97 @@
             
             <div class="page">
                 <div class="grid">
-                    <div class="task-wrapper" onclick="openPortal('daily')">
+                    
+                    <div class="task-wrapper" onclick="checkTaskAccess('bieudo.html', 2, 'OPERATOR')">
                         <svg class="svg-container" viewBox="-20 -20 240 160">
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
                         </svg>
-                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><div class="label">NHẬP LIỆU</div></div>
+                        <div class="content">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 21H3V3"/><path d="M18 17l-6-6-4 4-5-5"/></svg>
+                            <div class="label">DỮ LIỆU SỐ</div>
+                        </div>
                     </div>
 
-                    <div class="task-wrapper" onclick="openPortal('budget')">
+                    <div class="task-wrapper" onclick="checkTaskAccess('lenhAI.html', 3, 'ARCHITECT')">
                         <svg class="svg-container" viewBox="-20 -20 240 160">
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask2)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
                         </svg>
-                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><div class="label">BIẾN ĐỘNG</div></div>
+                        <div class="content">
+                            <svg class="icon" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                            <div class="label">PHÂN TÍCH AI</div>
+                        </div>
                     </div>
 
-                    <div class="task-wrapper" onclick="openPortal('status')">
+                    <div class="task-wrapper" onclick="window.location.href='vip.html'">
                         <svg class="svg-container" viewBox="-20 -20 240 160">
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask3)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
                         </svg>
-                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><div class="label">AI SOI VÍ</div></div>
+                        <div class="content">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                            <div class="label">NÂNG CẤP</div>
+                        </div>
                     </div>
 
-                    <div class="task-wrapper" onclick="openPortal('history')">
+                    <div class="task-wrapper" onclick="window.location.href='baomat.html'">
                         <svg class="svg-container" viewBox="-20 -20 240 160">
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask4)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
                         </svg>
-                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><div class="label">LỊCH SỬ</div></div>
+                        <div class="content">
+                            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <div class="label">BẢO MẬT</div>
+                        </div>
                     </div>
 
-                    <div class="task-wrapper" onclick="openPortal('alloc')">
+                    <div class="task-wrapper" onclick="checkTaskAccess('time.html', 3, 'ARCHITECT')">
                         <svg class="svg-container" viewBox="-20 -20 240 160">
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
                         </svg>
-                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><div class="label">PHÂN BỔ</div></div>
+                        <div class="content">
+                            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <div class="label">LỊCH</div>
+                        </div>
                     </div>
 
-                    <div class="task-wrapper" onclick="openPortal('settings')">
+                    <div class="task-wrapper" onclick="checkTaskAccess('uocnguyen.html', 2, 'OPERATOR')">
                         <svg class="svg-container" viewBox="-20 -20 240 160">
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask2)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
                         </svg>
-                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><div class="label">CÀI ĐẶT</div></div>
+                        <div class="content">
+                            <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            <div class="label">ƯỚC NGUYỆN</div>
+                        </div>
                     </div>
+
                 </div>
             </div>
             
-            </div>
+        </div>
     </div>
 
     <script>
-        // --- 1. SCRIPT VẼ KHUNG HUD (CỦA BẠN) ---
-        const hudCanvas = document.getElementById('hudCanvas');
-        const hudCtx = hudCanvas.getContext('2d');
-
-        const W = 500; 
-        const H = 200; 
-        hudCanvas.width = W; 
-        hudCanvas.height = H;
-
-        const COLOR = "#00f2ff"; 
-
-        function drawHudFrame() {
-            hudCtx.clearRect(0, 0, W, H);
-            
-            const r = 60;        
-            const barH = 55;     
-            const drawingWidth = 320; 
-            
-            const startX = (W - drawingWidth) / 2; 
-            const cy = H / 2;                      
-            const cx = startX + r;                 
-            
-            const barStart = cx + r - 5; 
-            const barLen = startX + drawingWidth - 30;
-
-            // 1. VÒNG TRÒN NỀN MỜ
-            hudCtx.shadowBlur = 0; 
-            hudCtx.strokeStyle = "rgba(0, 242, 255, 0.15)"; 
-            hudCtx.lineWidth = 1;
-            
-            hudCtx.setLineDash([2, 4]); 
-            hudCtx.beginPath();
-            hudCtx.arc(cx, cy, r, 0, Math.PI * 2);
-            hudCtx.stroke();
-
-            hudCtx.setLineDash([]); 
-            hudCtx.beginPath();
-            hudCtx.arc(cx, cy, r - 8, 0, Math.PI * 2);
-            hudCtx.stroke();
-
-            // 2. THANH KHUNG DÀI
-            hudCtx.strokeStyle = COLOR;
-            hudCtx.shadowColor = COLOR;
-            hudCtx.shadowBlur = 10; 
-            hudCtx.lineWidth = 2;
-            hudCtx.lineCap = "round";
-            hudCtx.lineJoin = "round";
-
-            let topY = cy - (barH / 2);
-            let botY = cy + (barH / 2);
-
-            hudCtx.beginPath();
-            hudCtx.moveTo(barStart, topY); 
-            hudCtx.lineTo(barStart + 15, topY); 
-            hudCtx.lineTo(barStart + 25, topY - 5); 
-            hudCtx.lineTo(barLen - 40, topY - 5); 
-            hudCtx.lineTo(barLen - 30, topY); 
-            hudCtx.lineTo(barLen, topY); 
-
-            hudCtx.lineTo(barLen + 15, cy - 8); 
-            hudCtx.lineTo(barLen + 15, cy + 8); 
-            hudCtx.lineTo(barLen, botY); 
-
-            hudCtx.lineTo(barStart + 80, botY); 
-            hudCtx.lineTo(barStart + 70, botY + 5); 
-            hudCtx.lineTo(barStart + 35, botY + 5); 
-            hudCtx.lineTo(barStart + 25, botY); 
-            hudCtx.lineTo(barStart, botY); 
-            hudCtx.stroke();
-
-            // 3. CHI TIẾT PHỤ
-            hudCtx.shadowBlur = 5;
-            hudCtx.lineWidth = 1;
-            hudCtx.beginPath();
-            hudCtx.moveTo(barStart + 40, botY + 12);
-            hudCtx.lineTo(barStart + 100, botY + 12);
-            hudCtx.stroke();
-
-            hudCtx.lineWidth = 2;
-            hudCtx.beginPath();
-            hudCtx.moveTo(barStart + 12, topY + 8);
-            hudCtx.lineTo(barStart + 6, botY - 8);
-            hudCtx.stroke();
-        }
-
-        drawHudFrame();
-
-        // --- 2. SCRIPT TẢI AVATAR & FRAME (CẮT DÁN TỪ PROFILEBASIC) ---
-        function loadLobbyAvatar() {
-            // Lấy ảnh từ LocalStorage
-            const savedAvatar = localStorage.getItem('USER_AVATAR_BASE64');
-            const img = document.getElementById('hud-avatar-img');
-            
-            if (savedAvatar) {
-                img.src = savedAvatar;
-                img.style.display = 'block';
-            }
-
-            // Gọi linh kiện khung Rank (Nếu script avatarframe.js đã load)
-            if (typeof AvatarFrameManager !== 'undefined') {
-                // Render vào div id="hud-frame-target"
-                AvatarFrameManager.render('hud-frame-target');
-            }
-        }
-
-        // --- 3. SCRIPT HIỆU ỨNG MẢNH VỠ (NEON SHARDS) ---
-        const cv = document.getElementById("explosion-canvas");
-        const ctx = cv.getContext("2d");
-        let shards = [];
-
-        function resize() { cv.width = window.innerWidth; cv.height = window.innerHeight; }
-        window.onresize = resize;
-        resize();
-
-        class NeonShard {
-            constructor(x, y, isSparkle = false) {
-                this.x = x; this.y = y; this.isSparkle = isSparkle;
-                this.life = 1.0;
-                this.decay = isSparkle ? 0.03 : 0.02 + Math.random() * 0.02;
+        // --- LOGIC KIỂM TRA QUYỀN HẠN ĐA NĂNG ---
+        function checkTaskAccess(url, requiredLevel, rankName) {
+            if (typeof NguoiGacCong !== 'undefined') {
+                const identity = NguoiGacCong.traLoiDanhTinh();
                 
-                const angle = Math.random() * Math.PI * 2;
-                const speed = isSparkle ? (1 + Math.random() * 4) : (3 + Math.random() * 4);
-                this.vx = Math.cos(angle) * speed;
-                this.vy = Math.sin(angle) * speed;
-
-                this.size = isSparkle ? (Math.random() * 2) : (5 + Math.random() * 8);
-                this.widthRatio = 0.3 + Math.random() * 0.4;
-                this.rot = angle; 
-                this.vRot = (Math.random() - 0.5) * 0.3;
-            }
-
-            update() {
-                this.vx *= 0.95; this.vy *= 0.95;
-                this.x += this.vx; this.y += this.vy;
-                this.rot += this.vRot; this.life -= this.decay;
-            }
-
-            draw() {
-                if(this.life <= 0) return;
-                ctx.globalCompositeOperation = "lighter";
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rot);
-                
-                const alpha = this.life;
-                const flicker = 0.8 + Math.random() * 0.2; 
-
-                ctx.beginPath();
-                if (this.isSparkle) {
-                    ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+                // Nếu cấp độ hiện tại < Cấp yêu cầu -> CHẶN
+                if (identity.level < requiredLevel) {
+                    showWarning(rankName);
                 } else {
-                    ctx.moveTo(0, -this.size);
-                    ctx.lineTo(this.size * this.widthRatio, this.size);
-                    ctx.lineTo(-this.size * this.widthRatio, this.size);
+                    // Đủ quyền -> CHO QUA
+                    window.location.href = url;
                 }
-                ctx.closePath();
-
-                ctx.shadowBlur = (this.isSparkle ? 5 : 20) * alpha;
-                ctx.shadowColor = "#00f2ff";
-                
-                ctx.strokeStyle = `rgba(0, 242, 255, ${alpha * flicker})`;
-                ctx.lineWidth = this.isSparkle ? 1 : 1.5;
-                ctx.stroke();
-
-                if (!this.isSparkle) {
-                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.15})`;
-                    ctx.fill();
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
-                    ctx.lineWidth = 0.5;
-                    ctx.stroke();
-                } else {
-                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-                    ctx.fill();
-                }
-                ctx.restore();
-                ctx.globalCompositeOperation = "source-over";
+            } else {
+                // Fallback nếu lỗi script: Cho qua
+                window.location.href = url;
             }
         }
-
-        function animate() {
-            ctx.clearRect(0, 0, cv.width, cv.height);
-            shards = shards.filter(s => s.life > 0);
-            shards.forEach(s => { s.update(); s.draw(); });
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        window.addEventListener('mousedown', e => {
-            for(let i=0; i<5; i++) shards.push(new NeonShard(e.clientX, e.clientY, false));
-            for(let i=0; i<8; i++) shards.push(new NeonShard(e.clientX, e.clientY, true));
-        });
-        window.addEventListener('touchstart', e => {
-            const t = e.touches[0];
-            for(let i=0; i<5; i++) shards.push(new NeonShard(t.clientX, t.clientY, false));
-            for(let i=0; i<8; i++) shards.push(new NeonShard(t.clientX, t.clientY, true));
-        });
-
-        // 4. BỤI CÔNG NGHỆ
-        function createDust() {
-            const container = document.getElementById('dust-container');
-            const particleCount = 80;
-
-            for (let i = 0; i < particleCount; i++) {
-                const dust = document.createElement('div');
-                dust.className = 'dust';
-                const size = Math.random() * 4 + 2; 
-                dust.style.width = size + 'px'; dust.style.height = size + 'px';
-                dust.style.left = Math.random() * 100 + 'vw';
-                const duration = Math.random() * 12 + 8; 
-                dust.style.animationDuration = duration + 's';
-                dust.style.animationDelay = '-' + (Math.random() * duration) + 's';
-                container.appendChild(dust);
-            }
-        }
-        createDust();
-
-        function openPortal(taskName) {
-            window.location.href = `./index.html?task=${taskName}`;
-        }
-// --- TRẠM ĐIỀU HÀNH BACKGROUND GHI ĐÈ ---
-window.addEventListener('storage', (e) => {
-    if (e.key === 'AURA_COMMAND_BG' && e.newValue) {
-        const targetBg = e.newValue;
-        
-        // 1. Thực hiện đổi nền ngay lập tức
-        document.body.style.backgroundImage = `url('./${targetBg}')`;
-        
-        // 2. Cập nhật chỉ số Index để nút bấm thủ công không bị lệch vòng lặp (Tùy chọn)
-        if (typeof bgFiles !== 'undefined') {
-            const newIndex = bgFiles.indexOf(targetBg);
-            if (newIndex !== -1) bgIndex = newIndex;
-        }
-
-        // 3. Lưu làm nền mặc định bền vững
-        localStorage.setItem('user_lobby_bg', targetBg);
-        
-        console.log("Điều hành: Đã ghi đè nền hệ thống thành -> " + targetBg);
-    }
-});
 
         // --- HÀM KIỂM TRA TRUY CẬP PROFILE (MỚI BỔ SUNG) ---
         function checkProfileAccess() {
@@ -562,17 +416,131 @@ window.addEventListener('storage', (e) => {
             }
         }
 
-        // 5. LOAD ẢNH NỀN KHI KHỞI ĐỘNG (Logic cũ)
-        window.onload = function() {
-            // Load Background
-            const savedBg = localStorage.getItem('user_lobby_bg');
-            if (savedBg) {
-                document.body.style.backgroundImage = `url('./${savedBg}')`;
-            } else {
-                document.body.style.backgroundImage = `url('./farfuture01.png')`;
-            }
+        function showWarning(rankName) {
+            const modal = document.getElementById('warningModal');
+            const msg = document.getElementById('warningMsg');
+            
+            // Cập nhật nội dung giải thích tùy theo Rank yêu cầu
+            msg.innerHTML = `Bạn cần nâng cấp lên quyền hạn ${rankName} để truy cập tính năng này.`;
+            modal.style.display = 'flex';
+        }
 
-            // Load Avatar & Frame
+        function closeWarningModal() {
+            document.getElementById('warningModal').style.display = 'none';
+        }
+
+        // --- CÁC HÀM CŨ GIỮ NGUYÊN ---
+        function showDevModal() {
+            document.getElementById('devModal').style.display = 'flex';
+        }
+        function closeDevModal() {
+            document.getElementById('devModal').style.display = 'none';
+        }
+
+        const hudCanvas = document.getElementById('hudCanvas');
+        const hudCtx = hudCanvas.getContext('2d');
+        const W = 500; const H = 200; 
+        hudCanvas.width = W; hudCanvas.height = H;
+        const COLOR = "#00f2ff"; 
+
+        function drawHudFrame() {
+            hudCtx.clearRect(0, 0, W, H);
+            const r = 60; const barH = 55; const drawingWidth = 320; 
+            const startX = (W - drawingWidth) / 2; const cy = H / 2; const cx = startX + r;                 
+            const barStart = cx + r - 5; const barLen = startX + drawingWidth - 30;
+
+            hudCtx.shadowBlur = 0; hudCtx.strokeStyle = "rgba(0, 242, 255, 0.15)"; hudCtx.lineWidth = 1;
+            hudCtx.setLineDash([2, 4]); hudCtx.beginPath(); hudCtx.arc(cx, cy, r, 0, Math.PI * 2); hudCtx.stroke();
+            hudCtx.setLineDash([]); hudCtx.beginPath(); hudCtx.arc(cx, cy, r - 8, 0, Math.PI * 2); hudCtx.stroke();
+
+            hudCtx.strokeStyle = COLOR; hudCtx.shadowColor = COLOR; hudCtx.shadowBlur = 10; 
+            hudCtx.lineWidth = 2; hudCtx.lineCap = "round"; hudCtx.lineJoin = "round";
+            let topY = cy - (barH / 2); let botY = cy + (barH / 2);
+
+            hudCtx.beginPath();
+            hudCtx.moveTo(barStart, topY); hudCtx.lineTo(barStart + 15, topY); hudCtx.lineTo(barStart + 25, topY - 5); 
+            hudCtx.lineTo(barLen - 40, topY - 5); hudCtx.lineTo(barLen - 30, topY); hudCtx.lineTo(barLen, topY); 
+            hudCtx.lineTo(barLen + 15, cy - 8); hudCtx.lineTo(barLen + 15, cy + 8); hudCtx.lineTo(barLen, botY); 
+            hudCtx.lineTo(barStart + 80, botY); hudCtx.lineTo(barStart + 70, botY + 5); hudCtx.lineTo(barStart + 35, botY + 5); 
+            hudCtx.lineTo(barStart + 25, botY); hudCtx.lineTo(barStart, botY); hudCtx.stroke();
+
+            hudCtx.shadowBlur = 5; hudCtx.lineWidth = 1; hudCtx.beginPath();
+            hudCtx.moveTo(barStart + 40, botY + 12); hudCtx.lineTo(barStart + 100, botY + 12); hudCtx.stroke();
+            hudCtx.lineWidth = 2; hudCtx.beginPath();
+            hudCtx.moveTo(barStart + 12, topY + 8); hudCtx.lineTo(barStart + 6, botY - 8); hudCtx.stroke();
+        }
+        drawHudFrame();
+
+        function loadLobbyAvatar() {
+            const savedAvatar = localStorage.getItem('USER_AVATAR_BASE64');
+            const img = document.getElementById('hud-avatar-img');
+            if (savedAvatar) { img.src = savedAvatar; img.style.display = 'block'; }
+            if (typeof AvatarFrameManager !== 'undefined') { AvatarFrameManager.render('hud-frame-target'); }
+        }
+
+        const cv = document.getElementById("explosion-canvas");
+        const ctx = cv.getContext("2d");
+        let shards = [];
+        function resize() { cv.width = window.innerWidth; cv.height = window.innerHeight; }
+        window.onresize = resize; resize();
+
+        class NeonShard {
+            constructor(x, y, isSparkle = false) {
+                this.x = x; this.y = y; this.isSparkle = isSparkle;
+                this.life = 1.0; this.decay = isSparkle ? 0.03 : 0.02 + Math.random() * 0.1;
+                const angle = Math.random() * Math.PI * 2; const speed = isSparkle ? (1 + Math.random() * 4) : (3 + Math.random() * 4);
+                this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+                this.size = isSparkle ? (Math.random() * 2) : (5 + Math.random() * 8);
+                this.widthRatio = 0.3 + Math.random() * 0.4; this.rot = angle; this.vRot = (Math.random() - 0.5) * 0.3;
+            }
+            update() { this.vx *= 0.95; this.vy *= 0.95; this.x += this.vx; this.y += this.vy; this.rot += this.vRot; this.life -= this.decay; }
+            draw() {
+                if(this.life <= 0) return;
+                ctx.globalCompositeOperation = "lighter"; ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+                const alpha = this.life; const flicker = 0.8 + Math.random() * 0.2; 
+                ctx.beginPath();
+                if (this.isSparkle) { ctx.arc(0, 0, this.size, 0, Math.PI * 2); } 
+                else { ctx.moveTo(0, -this.size); ctx.lineTo(this.size * this.widthRatio, this.size); ctx.lineTo(-this.size * this.widthRatio, this.size); }
+                ctx.closePath();
+                ctx.shadowBlur = (this.isSparkle ? 5 : 20) * alpha; ctx.shadowColor = "#00f2ff";
+                ctx.strokeStyle = `rgba(0, 242, 255, ${alpha * flicker})`; ctx.lineWidth = this.isSparkle ? 1 : 1.5; ctx.stroke();
+                if (!this.isSparkle) { ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.15})`; ctx.fill(); ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.8})`; ctx.lineWidth = 0.5; ctx.stroke(); } 
+                else { ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`; ctx.fill(); }
+                ctx.restore(); ctx.globalCompositeOperation = "source-over";
+            }
+        }
+        function animate() {
+            ctx.clearRect(0, 0, cv.width, cv.height); shards = shards.filter(s => s.life > 0); shards.forEach(s => { s.update(); s.draw(); }); requestAnimationFrame(animate);
+        }
+        animate();
+        window.addEventListener('mousedown', e => { for(let i=0; i<3; i++) shards.push(new NeonShard(e.clientX, e.clientY, false)); for(let i=0; i<5; i++) shards.push(new NeonShard(e.clientX, e.clientY, true)); });
+        window.addEventListener('touchstart', e => { const t = e.touches[0]; for(let i=0; i<3; i++) shards.push(new NeonShard(t.clientX, t.clientY, false)); for(let i=0; i<5; i++) shards.push(new NeonShard(t.clientX, t.clientY, true)); });
+
+        function createDust() {
+            const container = document.getElementById('dust-container'); const particleCount = 80;
+            for (let i = 0; i < particleCount; i++) {
+                const dust = document.createElement('div'); dust.className = 'dust';
+                const size = Math.random() * 4 + 2; dust.style.width = size + 'px'; dust.style.height = size + 'px';
+                dust.style.left = Math.random() * 100 + 'vw';
+                const duration = Math.random() * 12 + 8; dust.style.animationDuration = duration + 's';
+                dust.style.animationDelay = '-' + (Math.random() * duration) + 's'; container.appendChild(dust);
+            }
+        }
+        createDust();
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'AURA_COMMAND_BG' && e.newValue) {
+                const targetBg = e.newValue;
+                document.body.style.backgroundImage = `url('./${targetBg}')`;
+                localStorage.setItem('user_lobby_bg', targetBg);
+                console.log("Điều hành: Đã ghi đè nền hệ thống thành -> " + targetBg);
+            }
+        });
+
+        window.onload = function() {
+            const savedBg = localStorage.getItem('user_lobby_bg');
+            if (savedBg) { document.body.style.backgroundImage = `url('./${savedBg}')`; } 
+            else { document.body.style.backgroundImage = `url('./farfuture01.png')`; }
             loadLobbyAvatar();
         };
     </script>
