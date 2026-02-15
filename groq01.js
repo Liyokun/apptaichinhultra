@@ -2,11 +2,23 @@ export default async function handler(req, res) {
   // 1. Lấy khóa bảo mật
   const API_KEY = process.env.GROQ_01_KEY; 
   
-  // 2. Nhận dữ liệu từ giao diện (Bao gồm Prompt câu hỏi + Context dữ liệu ví)
-  const { prompt } = JSON.parse(req.body);
+  // 2. [QUAN TRỌNG] Xử lý dữ liệu đầu vào an toàn (Safe Parse)
+  // Tránh lỗi "Unexpected token o in JSON" nếu req.body đã là object
+  let body;
+  try {
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  } catch (error) {
+    return res.status(400).json({ error: "Dữ liệu gửi lên không đúng định dạng JSON" });
+  }
+
+  const { prompt } = body;
+
+  if (!prompt) {
+    return res.status(400).json({ error: "Thiếu nội dung câu hỏi (prompt)" });
+  }
 
   try {
-    // 3. Gọi Groq với cấu hình "System Role" chặt chẽ
+    // 3. Gọi trạm Groq
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: 'POST',
       headers: { 
@@ -36,12 +48,19 @@ export default async function handler(req, res) {
       })
     });
 
+    // Kiểm tra nếu Groq báo lỗi (vd: sai key, hết tiền)
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Groq API Error: ${response.status} - ${errText}`);
+    }
+
     const data = await response.json();
     
     // 4. Trả kết quả về cho ProfileUltra2
     res.status(200).json(data);
 
   } catch (error) {
+    console.error("API Error:", error);
     res.status(500).json({ error: "Lỗi kết nối Groq Core: " + error.message });
   }
 }

@@ -43,7 +43,7 @@
             position: fixed;
             top: 15%; 
             left: 50%; transform: translateX(-50%);
-            width: 70%; max-width: 250px; /* Bóp hẹp để chữ xuống dòng */
+            width: 70%; max-width: 250px; 
             min-height: 60px;
             
             display: block; 
@@ -85,7 +85,7 @@
         }
         .back-btn-neon:active { background: var(--neon); color: #000; transform: scale(0.98); }
 
-        /* --- 5. CHATBOT GIAO DIỆN (FIX ANIMATION & NÚT GỬI) --- */
+        /* --- 5. CHATBOT GIAO DIỆN --- */
         #chat-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); z-index: 9998; }
         
         #chat-panel {
@@ -95,7 +95,7 @@
             border: 1px solid var(--neon); border-radius: 15px;
             box-shadow: 0 0 30px rgba(0, 242, 255, 0.15); z-index: 9999; flex-direction: column;
             
-            /* FIX ANIMATION TỪ TÂM */
+            /* Animation từ tâm ra */
             animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
@@ -113,7 +113,7 @@
         .chat-input-area { padding: 15px; border-top: 1px solid rgba(0, 242, 255, 0.2); display: flex; gap: 10px; align-items: center; }
         #user-chat-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,242,255,0.3); padding: 10px; color: #fff; border-radius: 5px; outline: none; }
         
-        /* FIX NÚT GỬI GLASS NEON */
+        /* Nút Gửi kiểu Neon Glass */
         .send-btn { 
             background: rgba(0, 242, 255, 0.15); 
             color: var(--neon); 
@@ -147,8 +147,6 @@
         @keyframes bot-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
         @keyframes arrowBounce { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-5px); } }
         @keyframes glow-pulse { 0%, 100% { opacity: 0.3; transform: translateX(-50%) scale(1); } 50% { opacity: 0.6; transform: translateX(-50%) scale(1.2); } }
-        
-        /* Keyframe PopIn Chuẩn */
         @keyframes popIn { 
             from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 
             to { opacity: 1; transform: translate(-50%, -50%) scale(1); } 
@@ -230,7 +228,7 @@
             checkEnergyReset();
         };
 
-        // --- 1. LOGIC SỬA LỜI CHÀO ---
+        // --- LOGIC GIAO DIỆN ---
         function openEditModal() {
             const modal = document.getElementById('edit-modal');
             const input = document.getElementById('greeting-input');
@@ -259,7 +257,7 @@
             document.getElementById('char-count').innerText = `${len}/50`;
         }
 
-        // --- 2. LOGIC NĂNG LƯỢNG ---
+        // --- LOGIC NĂNG LƯỢNG ---
         function checkEnergyReset() {
             const now = Date.now();
             if (lastReset !== 0 && now - lastReset >= RESET_TIME_MS) {
@@ -289,7 +287,7 @@
             });
             if(level <= 0) {
                 root.style.setProperty('--neon', '#ff3333');
-                if(img) img.src = './robot2.png';
+                if(img) img.src = './robot1.png';
             } else if (level < 20) {
                 root.style.setProperty('--neon', '#ff3333');
                 if(img) img.src = './robot.png';
@@ -305,7 +303,7 @@
             updateVisuals(currentEnergy);
         }
 
-        // --- 3. LOGIC CHAT (GỌI API GROQ01 THỰC TẾ) ---
+        // --- LOGIC CHAT (GỌI API GROQ CHUẨN) ---
         function openChat() {
             document.getElementById('chat-overlay').style.display = 'block';
             document.getElementById('chat-panel').style.display = 'flex';
@@ -341,6 +339,7 @@
                 // Gọi API thực tế
                 const response = await fetch('/api/groq01', {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt: fullPrompt })
                 });
 
@@ -348,9 +347,11 @@
                 
                 // Xóa hiệu ứng chờ
                 const loadingEl = document.getElementById(loadingId);
-                if(loadingEl) loadingEl.parentElement.remove(); // Xóa cả dòng chat chứa loading
+                if(loadingEl) loadingEl.parentElement.remove(); 
 
-                if (data.choices && data.choices[0]) {
+                if (data.error) {
+                    addMsg("LỖI HỆ THỐNG: " + data.error, 'bot');
+                } else if (data.choices && data.choices[0]) {
                     addMsg(data.choices[0].message.content, 'bot');
                     deductEnergy(); // Chỉ trừ năng lượng khi thành công
                 } else {
