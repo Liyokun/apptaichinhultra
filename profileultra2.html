@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA SYSTEM - FINAL FIX UI</title>
+    <style>
+        :root {
+            --neon: #00f2ff;
+            --neon-dim: rgba(0, 242, 255, 0.2);
+            --danger: #ff3333;
+            --glass: rgba(10, 15, 30, 0.85);
+            --panel-bg: rgba(0, 20, 40, 0.6);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            background: #000 url('./robot.jpg') center/cover no-repeat fixed;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; font-family: 'Segoe UI', Courier, monospace;
+        }
+
+        /* --- 1. THANH NĂNG LƯỢNG (GIỮ NGUYÊN) --- */
+        .sci-fi-container {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 2000; width: 95%; max-width: 500px; height: 60px;
+            display: flex; align-items: center; pointer-events: none; 
+        }
+        .reactor-core { width: 60px; height: 60px; position: relative; flex-shrink: 0; display: flex; justify-content: center; align-items: center; z-index: 10; }
+        .spinner-outer { position: absolute; width: 100%; height: 100%; border: 2px dashed var(--neon); border-radius: 50%; animation: spin 4s linear infinite; }
+        .spinner-inner { position: absolute; width: 70%; height: 70%; border: 2px solid var(--neon); border-radius: 50%; animation: spin-reverse 3s linear infinite; }
+        .percentage-text { color: #fff; font-size: 14px; font-weight: bold; text-shadow: 0 0 5px var(--neon); z-index: 11; }
+        .percentage-text span { font-size: 9px; color: var(--neon); }
+        .bar-frame { flex-grow: 1; height: 35px; margin-left: -10px; padding-left: 25px; background: linear-gradient(90deg, var(--panel-bg) 0%, transparent 100%); border: 1px solid var(--neon-dim); border-left: none; clip-path: polygon(0 0, 95% 0, 100% 30%, 100% 100%, 5% 100%, 0 70%); display: flex; align-items: center; }
+        .segments-container { display: flex; gap: 3px; width: 100%; height: 14px; padding-right: 10px; }
+        .segment { flex: 1; height: 100%; background: var(--neon-dim); transform: skewX(-20deg); transition: 0.3s; }
+        .segment.active { background: var(--neon); box-shadow: 0 0 5px var(--neon); }
+
+        /* --- 2. KHUNG LỜI CHÀO (ĐÃ FIX WIDTH & WRAP) --- */
+        #greeting-board {
+            position: fixed;
+            top: 15%; 
+            left: 50%; transform: translateX(-50%);
+            /* FIX 1: Giảm chiều ngang để ép xuống dòng */
+            width: 70%; max-width: 250px; 
+            min-height: 60px;
+            
+            display: block; 
+            text-align: center;
+            white-space: pre-wrap; 
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.5; /* Tăng khoảng cách dòng cho dễ đọc */
+            padding: 10px;
+
+            background: transparent; 
+            color: var(--neon); font-weight: bold; font-size: 16px; letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px var(--neon), 0 0 20px rgba(0, 242, 255, 0.5);
+            
+            cursor: pointer; z-index: 999; transition: 0.3s; user-select: none;
+        }
+        #greeting-board:hover { text-shadow: 0 0 15px #fff; transform: translateX(-50%) scale(1.05); }
+
+        /* --- 3. ROBOT TRIGGER --- */
+        .robot-test-container {
+            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+            width: 220px; cursor: pointer; z-index: 1000; transition: 0.3s;
+        }
+        .robot-test-container:active { transform: translateX(-50%) scale(0.95); }
+        #robot-img { width: 100%; height: auto; filter: drop-shadow(0 0 15px var(--neon)); animation: bot-float 4s ease-in-out infinite; }
+        #robot-img[src=""], #robot-img:not([src]) { display: none; }
+        .bot-glow { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); width: 60%; height: 15px; background: radial-gradient(ellipse at center, var(--neon), transparent 70%); opacity: 0.5; filter: blur(8px); animation: glow-pulse 4s ease-in-out infinite; }
+
+        /* --- 4. NÚT BACK NEON --- */
+        .back-btn-container {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 3000; width: 80%; max-width: 300px;
+        }
+        .back-btn-neon {
+            width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 1px solid var(--neon); color: var(--neon);
+            font-size: 16px; font-weight: bold; letter-spacing: 3px; text-transform: uppercase; text-align: center;
+            box-shadow: 0 0 15px var(--neon-dim); clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+            cursor: pointer; transition: 0.2s;
+        }
+        .back-btn-neon:active { background: var(--neon); color: #000; transform: scale(0.98); }
+
+        /* --- 5. CHATBOT GIAO DIỆN (ĐÃ FIX ANIMATION & NÚT GỬI) --- */
+        #chat-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); z-index: 9998; }
+        
+        #chat-panel {
+            display: none; position: fixed; 
+            top: 50%; left: 50%; 
+            /* transform: translate(-50%, -50%);  <- Đã chuyển vào keyframes để tránh lỗi */
+            width: 90%; max-width: 400px; height: 60vh; background: var(--glass);
+            border: 1px solid var(--neon); border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.15); z-index: 9999; flex-direction: column;
+            
+            /* FIX 2: Animation mượt từ tâm */
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .close-arrow { position: absolute; top: -40px; left: 0; font-size: 30px; color: var(--neon); cursor: pointer; filter: drop-shadow(0 0 5px var(--neon)); animation: arrowBounce 1.5s infinite; }
+        .chat-header { padding: 15px; border-bottom: 1px solid rgba(0, 242, 255, 0.2); text-align: center; color: var(--neon); font-size: 12px; letter-spacing: 1px; }
+        #chat-content { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .chat-row { display: flex; gap: 10px; align-items: flex-end; }
+        .chat-row.user { justify-content: flex-end; }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; border: 1px solid var(--neon); overflow: hidden; background: #000; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .bubble { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; color: #fff; word-wrap: break-word; }
+        .bubble.bot { background: rgba(0, 242, 255, 0.15); border: 1px solid rgba(0, 242, 255, 0.3); border-bottom-left-radius: 2px; }
+        .bubble.user { background: rgba(255, 0, 255, 0.2); border: 1px solid rgba(255, 0, 255, 0.4); border-bottom-right-radius: 2px; text-align: left; }
+        
+        .chat-input-area { padding: 15px; border-top: 1px solid rgba(0, 242, 255, 0.2); display: flex; gap: 10px; align-items: center; }
+        #user-chat-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,242,255,0.3); padding: 10px; color: #fff; border-radius: 5px; outline: none; }
+        
+        /* FIX 3: Nút Gửi kiểu Neon Kính Mờ */
+        .send-btn { 
+            background: rgba(0, 242, 255, 0.1); /* Nền kính mờ */
+            color: var(--neon); 
+            border: 1px solid var(--neon); 
+            padding: 8px 20px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+        .send-btn:hover {
+            background: var(--neon);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon);
+        }
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* --- 6. POPUP EDIT --- */
+        #edit-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
+            z-index: 10000; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .modal-box {
+            width: 300px; padding: 25px; background: var(--glass);
+            border: 1px solid var(--neon); border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2); text-align: center;
+            animation: popIn 0.3s forwards; /* Dùng chung animation */
+        }
+        .modal-title { color: var(--neon); font-size: 14px; letter-spacing: 2px; margin-bottom: 15px; border-bottom: 1px dashed rgba(0, 242, 255, 0.3); padding-bottom: 10px; }
+        .neon-input {
+            width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(0, 242, 255, 0.3);
+            color: #fff; padding: 10px; border-radius: 5px; outline: none; resize: none;
+            height: 80px; text-align: center; font-family: inherit;
+        }
+        .neon-input:focus { border-color: var(--neon); box-shadow: 0 0 10px rgba(0, 242, 255, 0.3); }
+        .char-counter { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 5px; text-align: right; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .m-btn { flex: 1; padding: 10px; border: 1px solid var(--neon); cursor: pointer; background: transparent; color: var(--neon); transition: 0.3s; }
+        .m-btn:hover { background: var(--neon); color: #000; }
+
+        /* Animations */
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+        @keyframes bot-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes arrowBounce { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-5px); } }
+        @keyframes glow-pulse { 0%, 100% { opacity: 0.3; transform: translateX(-50%) scale(1); } 50% { opacity: 0.6; transform: translateX(-50%) scale(1.2); } }
+        
+        /* FIX 2: Keyframes chuẩn cho Popup giữa màn hình */
+        @keyframes popIn { 
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); } 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sci-fi-container">
+        <div class="reactor-core">
+            <div class="spinner-outer"></div><div class="spinner-inner"></div>
+            <div class="percentage-text" id="percent-display">100<span>%</span></div>
+        </div>
+        <div class="bar-frame"><div class="segments-container" id="segments-wrapper"></div></div>
+    </div>
+
+    <div id="greeting-board" onclick="openEditModal()">HỆ THỐNG SẴN SÀNG...</div>
+
+    <div id="edit-modal">
+        <div class="modal-box">
+            <div class="modal-title">CÀI ĐẶT LỜI CHÀO</div>
+            <textarea id="greeting-input" class="neon-input" maxlength="50" placeholder="Nhập lời chào..." oninput="updateCount()"></textarea>
+            <div class="char-counter" id="char-count">0/50</div>
+            <div class="modal-actions">
+                <button class="m-btn" onclick="closeModal()" style="border-color:var(--danger); color:var(--danger)">HỦY</button>
+                <button class="m-btn" onclick="saveGreeting()">LƯU LẠI</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="robot-test-container" onclick="openChat()">
+        <img src="./robot.png" id="robot-img" alt="AI" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iIzAwZjJmZiIvPjwvc3ZnPg=='">
+        <div class="bot-glow"></div>
+    </div>
+
+    <div class="back-btn-container" onclick="window.location.href='profileultra.html'">
+        <div class="back-btn-neon">BACK</div>
+    </div>
+
+    <div id="chat-overlay" onclick="/* Chặn click */"></div>
+    <div id="chat-panel">
+        <div class="close-arrow" onclick="closeChat()">&#8592;</div>
+        <div class="chat-header">AURA FINANCIAL CORE</div>
+        <div id="chat-content">
+            <div class="chat-row">
+                <div class="avatar"><img src="./robot.png"></div>
+                <div class="bubble bot">Xin chào! Hệ thống tài chính AURA sẵn sàng hỗ trợ.</div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="user-chat-input" placeholder="Nhập lệnh..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+            <button class="send-btn" onclick="sendChatMessage()">GỬI</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CẤU HÌNH ---
+        const TOTAL_SEGMENTS = 30;
+        const ENERGY_COST = 20;
+        const RESET_TIME_MS = 3600000;
+        const MAX_CHARS = 50; 
+        const DEFAULT_GREETING = "HỆ THỐNG SẴN SÀNG...";
+        
+        let currentEnergy = parseInt(localStorage.getItem('robot_energy')) || 100;
+        let lastReset = parseInt(localStorage.getItem('last_reset_time')) || 0;
+
+        window.onload = function() {
+            // Load Lời Chào
+            const saved = localStorage.getItem('user_robot_greeting');
+            const board = document.getElementById('greeting-board');
+            board.innerText = (saved && saved.trim() !== "") ? saved : DEFAULT_GREETING;
+
+            // Init Thanh Năng lượng
+            const wrapper = document.getElementById('segments-wrapper');
+            wrapper.innerHTML = '';
+            for(let i=0; i<TOTAL_SEGMENTS; i++) {
+                const s = document.createElement('div');
+                s.className = 'segment';
+                wrapper.appendChild(s);
+            }
+            checkEnergyReset();
+        };
+
+        // --- 1. LOGIC SỬA LỜI CHÀO ---
+        function openEditModal() {
+            const modal = document.getElementById('edit-modal');
+            const input = document.getElementById('greeting-input');
+            const currentText = document.getElementById('greeting-board').innerText;
+            
+            modal.style.display = 'flex';
+            input.value = currentText === DEFAULT_GREETING ? "" : currentText;
+            updateCount();
+            setTimeout(() => input.focus(), 100);
+        }
+
+        function closeModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+        }
+
+        function saveGreeting() {
+            const input = document.getElementById('greeting-input');
+            const text = input.value.trim();
+            const board = document.getElementById('greeting-board');
+
+            if (text !== "") {
+                board.innerText = text;
+                localStorage.setItem('user_robot_greeting', text);
+            } else {
+                board.innerText = DEFAULT_GREETING;
+                localStorage.setItem('user_robot_greeting', DEFAULT_GREETING);
+            }
+            closeModal();
+        }
+
+        function updateCount() {
+            const input = document.getElementById('greeting-input');
+            const counter = document.getElementById('char-count');
+            const currentLength = input.value.length;
+            
+            counter.innerText = `${currentLength}/${MAX_CHARS}`;
+            
+            if (currentLength >= MAX_CHARS) {
+                counter.style.color = "#ff3333";
+            } else {
+                counter.style.color = "rgba(255,255,255,0.5)";
+            }
+        }
+
+        // --- 2. LOGIC NĂNG LƯỢNG ---
+        function checkEnergyReset() {
+            const now = Date.now();
+            if (lastReset !== 0 && now - lastReset >= RESET_TIME_MS) {
+                currentEnergy = 100; lastReset = 0; saveData();
+            }
+            updateVisuals(currentEnergy);
+        }
+        function saveData() {
+            localStorage.setItem('robot_energy', currentEnergy);
+            localStorage.setItem('last_reset_time', lastReset);
+        }
+        function updateVisuals(level) {
+            const activeCount = Math.floor((level / 100) * TOTAL_SEGMENTS);
+            const segs = document.querySelectorAll('.segment');
+            const root = document.documentElement;
+            const img = document.getElementById('robot-img');
+
+            document.getElementById('percent-display').innerHTML = `${Math.floor(level)}<span>%</span>`;
+            segs.forEach((s, i) => {
+                if(i < activeCount) {
+                    s.classList.add('active');
+                    s.style.boxShadow = (level < 20) ? '0 0 5px var(--danger)' : '';
+                    s.style.background = (level < 20) ? 'var(--danger)' : '';
+                } else {
+                    s.classList.remove('active');
+                    s.style.background = ''; s.style.boxShadow = '';
+                }
+            });
+
+            if(level <= 0) {
+                root.style.setProperty('--neon', '#ff3333');
+                if(img) img.src = './robot1.png';
+            } else if (level < 20) {
+                root.style.setProperty('--neon', '#ff3333');
+                if(img) img.src = './robot.png';
+            } else {
+                root.style.setProperty('--neon', '#00f2ff');
+                if(img) img.src = './robot.png';
+            }
+        }
+        function deductEnergy() {
+            if(lastReset === 0) lastReset = Date.now();
+            currentEnergy = Math.max(0, currentEnergy - ENERGY_COST);
+            saveData();
+            updateVisuals(currentEnergy);
+        }
+
+        // --- 3. LOGIC CHAT ---
+        function openChat() {
+            document.getElementById('chat-overlay').style.display = 'block';
+            document.getElementById('chat-panel').style.display = 'flex';
+        }
+        function closeChat() {
+            document.getElementById('chat-overlay').style.display = 'none';
+            document.getElementById('chat-panel').style.display = 'none';
+        }
+        async function sendChatMessage() {
+            const input = document.getElementById('user-chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            checkEnergyReset();
+            if(currentEnergy <= 0) {
+                addMsg("CẢNH BÁO: Hết năng lượng.", 'bot');
+                input.value = ''; return;
+            }
+
+            addMsg(text, 'user');
+            input.value = '';
+
+            setTimeout(() => {
+                const keywords = ['tiền', 'ví', 'chi', 'thu', 'tài chính', 'báo cáo', 'lịch sử', 'app'];
+                const isFinance = keywords.some(k => text.toLowerCase().includes(k));
+                if(isFinance) {
+                    addMsg("Đã nhận lệnh: " + text + ". Đang truy xuất dữ liệu...", 'bot');
+                } else {
+                    addMsg("LỖI: Chỉ hỗ trợ thông tin tài chính.", 'bot');
+                }
+                deductEnergy();
+            }, 1000);
+        }
+        function addMsg(text, type) {
+            const box = document.getElementById('chat-content');
+            const row = document.createElement('div');
+            row.className = `chat-row ${type}`;
+            if(type === 'bot') {
+                const ava = document.createElement('div');
+                ava.className = 'avatar';
+                ava.innerHTML = `<img src="./robot.png">`;
+                row.appendChild(ava);
+            }
+            const bubble = document.createElement('div');
+            bubble.className = `bubble ${type}`;
+            bubble.innerText = text;
+            row.appendChild(bubble);
+            box.appendChild(row);
+            box.scrollTop = box.scrollHeight;
+        }
+    </script>
+</body>
+</html>
