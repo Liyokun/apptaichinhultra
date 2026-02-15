@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURA SYSTEM - FINAL FIX UI</title>
+    <title>AURA SYSTEM - AI CONNECTED</title>
     <style>
         :root {
             --neon: #00f2ff;
@@ -22,7 +22,7 @@
             overflow: hidden; font-family: 'Segoe UI', Courier, monospace;
         }
 
-        /* --- 1. THANH NĂNG LƯỢNG (GIỮ NGUYÊN) --- */
+        /* --- 1. THANH NĂNG LƯỢNG --- */
         .sci-fi-container {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             z-index: 2000; width: 95%; max-width: 500px; height: 60px;
@@ -38,13 +38,12 @@
         .segment { flex: 1; height: 100%; background: var(--neon-dim); transform: skewX(-20deg); transition: 0.3s; }
         .segment.active { background: var(--neon); box-shadow: 0 0 5px var(--neon); }
 
-        /* --- 2. KHUNG LỜI CHÀO (ĐÃ FIX WIDTH & WRAP) --- */
+        /* --- 2. KHUNG LỜI CHÀO (FIX UI) --- */
         #greeting-board {
             position: fixed;
             top: 15%; 
             left: 50%; transform: translateX(-50%);
-            /* FIX 1: Giảm chiều ngang để ép xuống dòng */
-            width: 70%; max-width: 250px; 
+            width: 70%; max-width: 250px; /* Bóp hẹp để chữ xuống dòng */
             min-height: 60px;
             
             display: block; 
@@ -52,14 +51,13 @@
             white-space: pre-wrap; 
             word-wrap: break-word;
             overflow-wrap: break-word;
-            line-height: 1.5; /* Tăng khoảng cách dòng cho dễ đọc */
+            line-height: 1.5;
             padding: 10px;
 
             background: transparent; 
             color: var(--neon); font-weight: bold; font-size: 16px; letter-spacing: 1px;
             text-transform: uppercase;
             text-shadow: 0 0 10px var(--neon), 0 0 20px rgba(0, 242, 255, 0.5);
-            
             cursor: pointer; z-index: 999; transition: 0.3s; user-select: none;
         }
         #greeting-board:hover { text-shadow: 0 0 15px #fff; transform: translateX(-50%) scale(1.05); }
@@ -87,18 +85,17 @@
         }
         .back-btn-neon:active { background: var(--neon); color: #000; transform: scale(0.98); }
 
-        /* --- 5. CHATBOT GIAO DIỆN (ĐÃ FIX ANIMATION & NÚT GỬI) --- */
+        /* --- 5. CHATBOT GIAO DIỆN (FIX ANIMATION & NÚT GỬI) --- */
         #chat-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); z-index: 9998; }
         
         #chat-panel {
             display: none; position: fixed; 
             top: 50%; left: 50%; 
-            /* transform: translate(-50%, -50%);  <- Đã chuyển vào keyframes để tránh lỗi */
             width: 90%; max-width: 400px; height: 60vh; background: var(--glass);
             border: 1px solid var(--neon); border-radius: 15px;
             box-shadow: 0 0 30px rgba(0, 242, 255, 0.15); z-index: 9999; flex-direction: column;
             
-            /* FIX 2: Animation mượt từ tâm */
+            /* FIX ANIMATION TỪ TÂM */
             animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
@@ -116,9 +113,9 @@
         .chat-input-area { padding: 15px; border-top: 1px solid rgba(0, 242, 255, 0.2); display: flex; gap: 10px; align-items: center; }
         #user-chat-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,242,255,0.3); padding: 10px; color: #fff; border-radius: 5px; outline: none; }
         
-        /* FIX 3: Nút Gửi kiểu Neon Kính Mờ */
+        /* FIX NÚT GỬI GLASS NEON */
         .send-btn { 
-            background: rgba(0, 242, 255, 0.1); /* Nền kính mờ */
+            background: rgba(0, 242, 255, 0.15); 
             color: var(--neon); 
             border: 1px solid var(--neon); 
             padding: 8px 20px; 
@@ -128,36 +125,16 @@
             box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
             transition: all 0.3s ease;
             text-transform: uppercase;
-            font-size: 12px;
-            letter-spacing: 1px;
+            font-size: 12px; letter-spacing: 1px;
         }
-        .send-btn:hover {
-            background: var(--neon);
-            color: #000;
-            box-shadow: 0 0 20px var(--neon);
-        }
-        .send-btn:active {
-            transform: scale(0.95);
-        }
+        .send-btn:hover { background: var(--neon); color: #000; box-shadow: 0 0 20px var(--neon); }
+        .send-btn:active { transform: scale(0.95); }
 
         /* --- 6. POPUP EDIT --- */
-        #edit-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
-            z-index: 10000; justify-content: center; align-items: center; flex-direction: column;
-        }
-        .modal-box {
-            width: 300px; padding: 25px; background: var(--glass);
-            border: 1px solid var(--neon); border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2); text-align: center;
-            animation: popIn 0.3s forwards; /* Dùng chung animation */
-        }
+        #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); z-index: 10000; justify-content: center; align-items: center; flex-direction: column; }
+        .modal-box { width: 300px; padding: 25px; background: var(--glass); border: 1px solid var(--neon); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 242, 255, 0.2); text-align: center; animation: popIn 0.3s forwards; }
         .modal-title { color: var(--neon); font-size: 14px; letter-spacing: 2px; margin-bottom: 15px; border-bottom: 1px dashed rgba(0, 242, 255, 0.3); padding-bottom: 10px; }
-        .neon-input {
-            width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(0, 242, 255, 0.3);
-            color: #fff; padding: 10px; border-radius: 5px; outline: none; resize: none;
-            height: 80px; text-align: center; font-family: inherit;
-        }
+        .neon-input { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(0, 242, 255, 0.3); color: #fff; padding: 10px; border-radius: 5px; outline: none; resize: none; height: 80px; text-align: center; font-family: inherit; }
         .neon-input:focus { border-color: var(--neon); box-shadow: 0 0 10px rgba(0, 242, 255, 0.3); }
         .char-counter { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 5px; text-align: right; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
@@ -171,7 +148,7 @@
         @keyframes arrowBounce { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-5px); } }
         @keyframes glow-pulse { 0%, 100% { opacity: 0.3; transform: translateX(-50%) scale(1); } 50% { opacity: 0.6; transform: translateX(-50%) scale(1.2); } }
         
-        /* FIX 2: Keyframes chuẩn cho Popup giữa màn hình */
+        /* Keyframe PopIn Chuẩn */
         @keyframes popIn { 
             from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 
             to { opacity: 1; transform: translate(-50%, -50%) scale(1); } 
@@ -239,12 +216,10 @@
         let lastReset = parseInt(localStorage.getItem('last_reset_time')) || 0;
 
         window.onload = function() {
-            // Load Lời Chào
             const saved = localStorage.getItem('user_robot_greeting');
             const board = document.getElementById('greeting-board');
             board.innerText = (saved && saved.trim() !== "") ? saved : DEFAULT_GREETING;
 
-            // Init Thanh Năng lượng
             const wrapper = document.getElementById('segments-wrapper');
             wrapper.innerHTML = '';
             for(let i=0; i<TOTAL_SEGMENTS; i++) {
@@ -260,22 +235,16 @@
             const modal = document.getElementById('edit-modal');
             const input = document.getElementById('greeting-input');
             const currentText = document.getElementById('greeting-board').innerText;
-            
             modal.style.display = 'flex';
             input.value = currentText === DEFAULT_GREETING ? "" : currentText;
             updateCount();
             setTimeout(() => input.focus(), 100);
         }
-
-        function closeModal() {
-            document.getElementById('edit-modal').style.display = 'none';
-        }
-
+        function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
         function saveGreeting() {
             const input = document.getElementById('greeting-input');
             const text = input.value.trim();
             const board = document.getElementById('greeting-board');
-
             if (text !== "") {
                 board.innerText = text;
                 localStorage.setItem('user_robot_greeting', text);
@@ -285,19 +254,9 @@
             }
             closeModal();
         }
-
         function updateCount() {
-            const input = document.getElementById('greeting-input');
-            const counter = document.getElementById('char-count');
-            const currentLength = input.value.length;
-            
-            counter.innerText = `${currentLength}/${MAX_CHARS}`;
-            
-            if (currentLength >= MAX_CHARS) {
-                counter.style.color = "#ff3333";
-            } else {
-                counter.style.color = "rgba(255,255,255,0.5)";
-            }
+            const len = document.getElementById('greeting-input').value.length;
+            document.getElementById('char-count').innerText = `${len}/50`;
         }
 
         // --- 2. LOGIC NĂNG LƯỢNG ---
@@ -317,7 +276,6 @@
             const segs = document.querySelectorAll('.segment');
             const root = document.documentElement;
             const img = document.getElementById('robot-img');
-
             document.getElementById('percent-display').innerHTML = `${Math.floor(level)}<span>%</span>`;
             segs.forEach((s, i) => {
                 if(i < activeCount) {
@@ -329,10 +287,9 @@
                     s.style.background = ''; s.style.boxShadow = '';
                 }
             });
-
             if(level <= 0) {
                 root.style.setProperty('--neon', '#ff3333');
-                if(img) img.src = './robot1.png';
+                if(img) img.src = './robot2.png';
             } else if (level < 20) {
                 root.style.setProperty('--neon', '#ff3333');
                 if(img) img.src = './robot.png';
@@ -348,7 +305,7 @@
             updateVisuals(currentEnergy);
         }
 
-        // --- 3. LOGIC CHAT ---
+        // --- 3. LOGIC CHAT (GỌI API GROQ01 THỰC TẾ) ---
         function openChat() {
             document.getElementById('chat-overlay').style.display = 'block';
             document.getElementById('chat-panel').style.display = 'flex';
@@ -357,6 +314,7 @@
             document.getElementById('chat-overlay').style.display = 'none';
             document.getElementById('chat-panel').style.display = 'none';
         }
+
         async function sendChatMessage() {
             const input = document.getElementById('user-chat-input');
             const text = input.value.trim();
@@ -364,25 +322,49 @@
 
             checkEnergyReset();
             if(currentEnergy <= 0) {
-                addMsg("CẢNH BÁO: Hết năng lượng.", 'bot');
+                addMsg("CẢNH BÁO: Hết năng lượng. Vui lòng đợi nạp lại.", 'bot');
                 input.value = ''; return;
             }
 
             addMsg(text, 'user');
             input.value = '';
+            
+            // Hiển thị hiệu ứng chờ
+            const loadingId = 'loading-' + Date.now();
+            addMsg("...", 'bot', loadingId);
 
-            setTimeout(() => {
-                const keywords = ['tiền', 'ví', 'chi', 'thu', 'tài chính', 'báo cáo', 'lịch sử', 'app'];
-                const isFinance = keywords.some(k => text.toLowerCase().includes(k));
-                if(isFinance) {
-                    addMsg("Đã nhận lệnh: " + text + ". Đang truy xuất dữ liệu...", 'bot');
+            // Lấy dữ liệu ví để gửi kèm
+            const appDataRaw = localStorage.getItem('app_data_v4');
+            const fullPrompt = `Dữ liệu ví JSON hiện tại: ${appDataRaw || 'Không có dữ liệu'}. \n\nCâu hỏi người dùng: ${text}`;
+
+            try {
+                // Gọi API thực tế
+                const response = await fetch('/api/groq01', {
+                    method: 'POST',
+                    body: JSON.stringify({ prompt: fullPrompt })
+                });
+
+                const data = await response.json();
+                
+                // Xóa hiệu ứng chờ
+                const loadingEl = document.getElementById(loadingId);
+                if(loadingEl) loadingEl.parentElement.remove(); // Xóa cả dòng chat chứa loading
+
+                if (data.choices && data.choices[0]) {
+                    addMsg(data.choices[0].message.content, 'bot');
+                    deductEnergy(); // Chỉ trừ năng lượng khi thành công
                 } else {
-                    addMsg("LỖI: Chỉ hỗ trợ thông tin tài chính.", 'bot');
+                    addMsg("LỖI: AI không phản hồi.", 'bot');
                 }
-                deductEnergy();
-            }, 1000);
+
+            } catch (error) {
+                const loadingEl = document.getElementById(loadingId);
+                if(loadingEl) loadingEl.parentElement.remove();
+                addMsg("LỖI KẾT NỐI: Kiểm tra lại mạng hoặc API.", 'bot');
+            }
         }
-        function addMsg(text, type) {
+
+        function addMsg(text, type, id = null) {
             const box = document.getElementById('chat-content');
             const row = document.createElement('div');
             row.className = `chat-row ${type}`;
@@ -394,7 +376,9 @@
             }
             const bubble = document.createElement('div');
             bubble.className = `bubble ${type}`;
+            if(id) bubble.id = id;
             bubble.innerText = text;
+            
             row.appendChild(bubble);
             box.appendChild(row);
             box.scrollTop = box.scrollHeight;
