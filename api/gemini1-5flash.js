@@ -1,42 +1,37 @@
 export default async function handler(req, res) {
-  // 1. Lấy API KEY từ Environment Variables của Vercel
   const API_KEY = process.env.GEMINI_KEY; 
 
-  // 2. Kiểm tra phương thức yêu cầu (Chỉ nhận POST)
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Chỉ chấp nhận lệnh POST" });
   }
 
   try {
-    // 3. Lấy prompt từ body (Vercel tự động parse JSON nên không cần JSON.parse nữa)
     const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: "Thiếu nội dung lệnh" });
 
-    if (!prompt) {
-      return res.status(400).json({ error: "Missing prompt" });
-    }
-
-    // 4. Gọi đến Google Gemini API
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
 
     const data = await response.json();
 
-    // 5. Kiểm tra và trả về dữ liệu SẠCH cho file HTML của bạn
-    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-      // Trả về đúng cấu trúc mà profileultra2.html đang chờ đợi
-      res.status(200).json(data);
-    } else {
-      console.error("Gemini Error Detail:", data);
-      res.status(500).json({ error: "AI không phản hồi đúng cấu trúc" });
+    // KIỂM TRA LỖI TRỰC TIẾP TỪ GOOGLE
+    if (data.error) {
+      return res.status(200).json({ 
+        text: `⚠️ LỖI GOOGLE AI: [${data.error.code}] - ${data.error.message}\n\nHướng dẫn: Kiểm tra lại GEMINI_KEY trong Settings Vercel.` 
+      });
     }
 
+    if (data.candidates && data.candidates[0]) {
+      // Trả về Object chứa thuộc tính text để HTML dễ đọc
+      return res.status(200).json({ text: data.candidates[0].content.parts[0].text });
+    } 
+
+    return res.status(200).json({ text: "Hệ thống phản hồi rỗng, hãy thử lại." });
+
   } catch (error) {
-    console.error("Fetch Error:", error);
-    res.status(500).json({ error: "Lỗi kết nối AI Core: " + error.message });
+    return res.status(200).json({ text: "🚨 LỖI KẾT NỐI SERVER: " + error.message });
   }
 }
