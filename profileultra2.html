@@ -327,19 +327,26 @@
                 });
 
                 const data = await response.json();
-                
-                const loadingEl = document.getElementById(loadingId);
-                if(loadingEl) loadingEl.parentElement.remove();
+const loadingEl = document.getElementById(loadingId);
+if(loadingEl) loadingEl.parentElement.remove();
 
-                // [UPDATE] Cấu trúc phản hồi của Gemini
-                if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-                    const aiText = data.candidates[0].content.parts[0].text;
-                    addMsg(aiText, 'bot');
-                    deductEnergy(); 
-                } else {
-                    addMsg("LỖI: Gemini không phản hồi hoặc trả về sai cấu trúc.", 'bot');
-                    console.log("Gemini Raw:", data);
-                }
+// Kiểm tra cả cấu trúc cũ lẫn cấu trúc mới cho chắc ăn
+let aiText = "";
+if (data.text) {
+    aiText = data.text; // Cấu trúc rút gọn tôi vừa làm cho bạn
+} else if (data.candidates && data.candidates[0]) {
+    aiText = data.candidates[0].content.parts[0].text; // Cấu trúc mặc định của Google
+}
+
+if (aiText) {
+    addMsg(aiText, 'bot');
+    deductEnergy();
+} else {
+    // Nếu vẫn lỗi, nó sẽ hiện lỗi chi tiết từ Google mà tôi đã cài vào file .js
+    const errorMsg = data.error_detail || "Gemini trả về dữ liệu không xác định";
+    addMsg("⚠️ BÁO LỖI: " + errorMsg, 'bot');
+}
+
 
             } catch (error) {
                 const loadingEl = document.getElementById(loadingId);
