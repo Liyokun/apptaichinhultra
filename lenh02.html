@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI PREDICT - FORECAST</title>
+    <style>
+        /* --- 1. CẤU HÌNH GIAO DIỆN --- */
+        :root {
+            --neon: #00f2ff;
+            --neon-green: #00ff88;
+            --neon-pink: #ff00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #000 no-repeat center bottom / cover fixed;
+            height: 100vh; width: 100vw;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            color: var(--neon);
+            display: flex; align-items: center; justify-content: center;
+            perspective: 1500px;
+            touch-action: none;
+            transition: background-image 0.5s ease-in-out;
+        }
+
+        .overlay-dim {
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(5px);
+            z-index: 1; pointer-events: none;
+        }
+
+        .hologram-container {
+            position: relative; z-index: 10;
+            width: 90vw; max-width: 700px; 
+            height: 500px;
+            transform-style: preserve-3d;
+            animation: float 6s ease-in-out infinite;
+            margin-top: -30px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotateX(5deg) rotateY(-5deg); }
+            50% { transform: translateY(-15px) rotateX(5deg) rotateY(-5deg); }
+        }
+
+        .screen {
+            position: relative; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(0, 242, 255, 0.05), rgba(0, 242, 255, 0.1));
+            border: 2px solid var(--neon);
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.4), inset 0 0 60px rgba(0, 242, 255, 0.2);
+            transform-style: preserve-3d;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            clip-path: polygon(
+                20px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px),
+                calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 20px), 0 20px
+            );
+        }
+
+        .screen::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 242, 255, 0.03) 2px, rgba(0, 242, 255, 0.03) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 242, 255, 0.03) 2px, rgba(0, 242, 255, 0.03) 4px);
+            pointer-events: none; z-index: 2;
+        }
+
+        .screen::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--neon), transparent);
+            box-shadow: 0 0 20px var(--neon);
+            animation: scan 3s linear infinite; z-index: 3; opacity: 0.6;
+        }
+        @keyframes scan { 
+            0% { transform: translateY(0); } 100% { transform: translateY(600px); } 
+        }
+
+        .header {
+            position: relative; padding: 15px 30px;
+            border-bottom: 2px solid rgba(0, 242, 255, 0.3);
+            background: rgba(0, 5, 10, 0.85);
+            z-index: 10; flex-shrink: 0;
+        }
+        .header h1 {
+            font-size: 18px; letter-spacing: 3px;
+            text-shadow: 
+                0 0 12px var(--neon),
+                0 0 28px var(--neon),
+                0 0 50px var(--neon);
+            animation: glow-text 2s ease-in-out infinite;
+        }
+        @keyframes glow-text {
+            0%, 100% { 
+                text-shadow: 
+                    0 0 12px var(--neon), 
+                    0 0 28px var(--neon),
+                    0 0 50px var(--neon); 
+            }
+            50% { 
+                text-shadow: 
+                    0 0 24px var(--neon), 
+                    0 0 60px var(--neon), 
+                    0 0 100px var(--neon),
+                    0 0 140px rgba(0, 242, 255, 0.6);
+            }
+        }
+        .status {
+            font-size: 11px; 
+            color: var(--neon-green); 
+            margin-top: 5px;
+            display: flex; align-items: center; gap: 8px;
+            text-shadow: 
+                0 0 7px var(--neon-green),
+                0 0 14px var(--neon-green),
+                0 0 24px rgba(0, 255, 136, 0.7);
+        }
+        .status::before {
+            content: ''; width: 6px; height: 6px; background: var(--neon-green);
+            border-radius: 50%; box-shadow: 0 0 8px var(--neon-green); animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.3; } }
+
+        .content {
+            padding: 20px 30px; flex-grow: 1; 
+            overflow-y: auto;
+            position: relative; z-index: 4;
+            touch-action: pan-y;
+            -webkit-overflow-scrolling: touch;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .content::-webkit-scrollbar { 
+            display: none; 
+        }
+
+        .line {
+            margin-bottom: 10px; font-size: 13px; letter-spacing: 1px;
+            text-shadow: 
+                0 0 6px var(--neon),
+                0 0 14px var(--neon),
+                0 0 24px rgba(0, 242, 255, 0.8);
+            opacity: 0;
+            transform: translateX(-10px); animation: text-appear 0.3s forwards;
+        }
+        @keyframes text-appear { to { opacity: 1; transform: translateX(0); } }
+
+        .line.success {
+            color: var(--neon-green);
+            text-shadow: 
+                0 0 8px var(--neon-green),
+                0 0 18px var(--neon-green),
+                0 0 32px rgba(0, 255, 136, 0.85);
+        }
+
+        .line.error {
+            color: #ff0066;
+            font-weight: bold;
+            text-shadow: 
+                0 0 9px #ff0066,
+                0 0 20px #ff0066,
+                0 0 38px rgba(255, 0, 102, 0.8);
+        }
+
+        .line.highlight {
+            color: var(--neon-pink);
+            font-weight: bold;
+            text-shadow: 
+                0 0 10px var(--neon-pink),
+                0 0 24px var(--neon-pink),
+                0 0 45px rgba(255, 0, 255, 0.8);
+        }
+
+        .line.system {
+            color: #ffffff;
+            font-style: italic;
+            text-shadow: 
+                0 0 5px rgba(136, 136, 136, 0.9),
+                0 0 10px rgba(136, 136, 136, 0.6);
+        }
+
+        .cursor::after { 
+            content: '▋'; 
+            animation: blink 1s infinite; 
+            color: var(--neon);
+            text-shadow: 
+                0 0 9px var(--neon),
+                0 0 18px var(--neon);
+        }
+
+        .corner { position: absolute; width: 30px; height: 30px; border: 2px solid var(--neon); z-index: 5; pointer-events: none; }
+        .corner.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; clip-path: polygon(0 0, 100% 0, 0 100%); }
+        .corner.tr { top: -2px; right: -2px; border-left: none; border-bottom: none; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+        .corner.bl { bottom: -2px; left: -2px; border-right: none; border-top: none; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+        .corner.br { bottom: -2px; right: -2px; border-left: none; border-top: none; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+
+        .depth-layer { position: absolute; width: 100%; height: 100%; border: 1px solid rgba(0, 242, 255, 0.1); pointer-events: none; clip-path: inherit; }
+        .depth-layer.l1 { transform: translateZ(-10px); opacity: 0.3; }
+        .depth-layer.l2 { transform: translateZ(-20px); opacity: 0.2; }
+        .depth-layer.l3 { transform: translateZ(-30px); opacity: 0.1; }
+
+        .particle {
+            position: fixed; width: 2px; height: 2px; background: var(--neon);
+            border-radius: 50%; pointer-events: none; z-index: 2;
+            animation: particle-float 15s linear infinite;
+        }
+        @keyframes particle-float {
+            0% { transform: translate(0, 100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; } 90% { opacity: 1; }
+            100% { transform: translate(200px, -100px) rotate(360deg); opacity: 0; }
+        }
+
+        .back-circle {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 50px; height: 50px; border: 1px solid var(--neon); border-radius: 50%;
+            background: rgba(0, 5, 10, 0.8); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 100; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+        .back-circle svg { width: 24px; height: 24px; fill: none; stroke: var(--neon); stroke-width: 2; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay-dim"></div>
+
+    <script>
+        for(let i = 0; i < 30; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDelay = Math.random() * 15 + 's';
+            p.style.animationDuration = (Math.random() * 10 + 10) + 's';
+            document.body.appendChild(p);
+        }
+    </script>
+
+    <div class="hologram-container">
+        <div class="depth-layer l1"></div>
+        <div class="depth-layer l2"></div>
+        <div class="depth-layer l3"></div>
+
+        <div class="screen">
+            <div class="corner tl"></div>
+            <div class="corner tr"></div>
+            <div class="corner bl"></div>
+            <div class="corner br"></div>
+
+            <div class="header">
+                <h1>AI FORECAST V1.0</h1>
+                <div class="status">KẾT NỐI MẠNG LƯỚI TƯƠNG LAI</div>
+            </div>
+
+            <div class="content" id="output"></div>
+        </div>
+    </div>
+
+    <div class="back-circle" onclick="window.location.href='./lenhAI.html'">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </div>
+
+    <script>
+        // --- BỘ THU TÍN HIỆU ĐỔI NỀN (GIỮ NGUYÊN) ---
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'AURA_COMMAND_BG' && e.newValue) {
+                const targetBg = e.newValue;
+                document.body.style.backgroundImage = `url('./${targetBg}')`;
+                localStorage.setItem('user_lobby_bg', targetBg);
+                console.log("AI Scanner: Đã đồng bộ nền -> " + targetBg);
+            }
+        });
+
+        window.onload = function() {
+            const savedBg = localStorage.getItem('user_lobby_bg');
+            if (savedBg) {
+                document.body.style.backgroundImage = `url('./${savedBg}')`;
+            } else {
+                document.body.style.backgroundImage = `url('./farfuture01.png')`;
+            }
+            runAnalysis(); // Kích hoạt lệnh mới
+        };
+
+        const output = document.getElementById('output');
+        
+        // Hàm in dòng lệnh (Giữ nguyên)
+        function printLine(text, type = 'normal', delay = 0) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const div = document.createElement('div');
+                    let newType = type;
+                    if (type === 'warn') newType = 'error'; 
+                    
+                    div.className = `line ${newType}`;
+                    div.innerHTML = text; 
+                    output.appendChild(div);
+                    output.scrollTop = output.scrollHeight; 
+                    resolve();
+                }, delay);
+            });
+        }
+
+        // --- [NEW] LOGIC DỰ BÁO CHI TIÊU (LỆNH 02) ---
+        async function runAnalysis() {
+            await printLine("> Đang kết nối giao thức bảo mật...", "system", 200);
+            await printLine("> Đang đồng bộ giao thức dự báo thời gian thực...", "system", 800);
+
+            // 1. LẤY DỮ LIỆU TỪ BỘ NHỚ
+            const startDateStr = localStorage.getItem('AURA_START_DATE');
+            const rawData = localStorage.getItem('app_data_v4');
+            const appData = rawData ? JSON.parse(rawData) : { wallets: [], totalBudget: 0 };
+
+            // 2. TÍNH TOÁN CƠ BẢN
+            // Tính số ngày đã trôi qua
+            let daysPassed = 0;
+            if (startDateStr) {
+                const parts = startDateStr.split('/'); // Giả sử định dạng dd/mm/yyyy
+                const startObj = new Date(parts[2], parts[1]-1, parts[0]);
+                const now = new Date();
+                
+                // Nếu cùng ngày thì tính là 0 ngày (hoặc 1 tùy logic), ở đây ta xét độ chênh lệch
+                if (now.getDate() === startObj.getDate() && now.getMonth() === startObj.getMonth()) {
+                    daysPassed = 0;
+                } else {
+                    const diffTime = Math.abs(now - startObj);
+                    daysPassed = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                }
+            }
+
+            // Tính tổng tiền (Đổi từ 'k' sang VNĐ)
+            const totalAlloc = (appData.totalBudget || 0) * 1000;
+            const totalSpent = (appData.wallets || []).reduce((acc, w) => acc + (w.spent || 0), 0) * 1000;
+
+            // 3. GÁC CỔNG DỮ LIỆU (GATEKEEPER)
+            // Điều kiện: Phải qua ít nhất 1 ngày VÀ Đã tiêu tiền
+            if (!startDateStr || daysPassed < 1 || totalSpent <= 0) {
+                await printLine("[SYSTEM]: Dữ liệu chưa đủ 24h hoặc chưa phát hiện chi tiêu.", "error", 1500);
+                await printLine("Giao thức dự báo yêu cầu mốc thời gian thực tế để kích hoạt.", "system", 2000);
+                return; // Dừng lệnh tại đây
+            }
+
+            // 4. LOGIC PHÂN TÍCH TIÊN TRI
+            const velocity = totalSpent / daysPassed; // Vận tốc tiêu (VNĐ/ngày)
+            const reserve = totalAlloc - totalSpent;  // Quỹ còn lại
+            
+            // In thông tin vận tốc
+            await printLine(`> Vận tốc chi tiêu xác định: ${velocity.toLocaleString('vi-VN', {maximumFractionDigits: 0})} VNĐ / ngày.`, "normal", 1500);
+
+            // Kiểm tra trường hợp vỡ nợ sớm
+            if (reserve <= 0) {
+                 await printLine(`⚠ CẢNH BÁO: Ngân sách đã cạn kiệt (Âm ${Math.abs(reserve).toLocaleString()} VNĐ).`, "error", 2500);
+                 return;
+            }
+
+            // Tính số ngày còn trụ được
+            const daysLeft = reserve / velocity;
+            const daysLeftDisplay = daysLeft.toFixed(1);
+
+            // Giả định chu kỳ chuẩn là 30 ngày để đưa ra lời khuyên
+            // Nếu (Ngày đã qua + Ngày còn lại) >= 28 (cho phép sai số 2 ngày) thì là AN TOÀN
+            const projectedCycleLength = daysPassed + daysLeft;
+            const standardCycle = 30; 
+
+            if (projectedCycleLength >= 28) {
+                // --- TRƯỜNG HỢP ỔN ĐỊNH ---
+                await printLine(`Hệ thống dự báo bạn có thể duy trì thêm ${daysLeftDisplay} ngày. An toàn.`, "success", 2500);
+                await printLine("> Đề xuất: Duy trì phong độ hiện tại.", "highlight", 3000);
+            } else {
+                // --- TRƯỜNG HỢP NGUY HIỂM ---
+                await printLine(`⚠ CẢNH BÁO: Quỹ dự phòng sẽ cạn kiệt trong ${daysLeftDisplay} ngày tới. Nguy cơ vỡ nợ cao.`, "error", 2500);
+                
+                // Tính toán đề xuất (Z)
+                const neededDays = standardCycle - daysPassed; // Số ngày còn lại cần phải sống sót
+                let targetVelocity = 0;
+                
+                if (neededDays > 0) {
+                    targetVelocity = reserve / neededDays;
+                }
+                
+                if (targetVelocity > 0) {
+                     await printLine(`> Đề xuất: Giảm vận tốc chi tiêu xuống còn ${targetVelocity.toLocaleString('vi-VN', {maximumFractionDigits: 0})} VNĐ / ngày để về đích an toàn.`, "highlight", 3500);
+                } else {
+                     await printLine(`> Đề xuất: Ngừng chi tiêu ngay lập tức hoặc bơm thêm vốn.`, "highlight", 3500);
+                }
+            }
+            
+            await printLine("> Đang chờ lệnh người dùng... <span class='cursor'></span>", "normal", 4500);
+        }
+    </script>
+</body>
+</html>
