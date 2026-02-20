@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <title>ORCHESTRATOR VERIFICATION PROTOCOL</title>
+    <style>
+        :root {
+            /* === ĐỔI CHỦ ĐỀ SANG MÀU TÍM (ORCHESTRATOR THEME) === */
+            --neon: #bc13fe; /* Màu Tím Huyền Bí */
+            --bg-color: #0a000f; /* Nền đen pha tím thẫm */
+            --glass-bg: rgba(15, 0, 20, 0.85);
+            --scan-color: rgba(188, 19, 254, 0.8);
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background-color: black;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* === CHUNG CHO CẢ 2 GIAO DIỆN === */
+        .full-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+        }
+
+        /* NÚT BACK (Góc dưới cùng) */
+        .btn-back {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 40px;
+            color: var(--neon);
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--neon);
+            backdrop-filter: blur(5px);
+            cursor: pointer;
+            font-weight: bold;
+            letter-spacing: 2px;
+            transition: 0.3s;
+            z-index: 50;
+            text-decoration: none; /* Dùng thẻ a */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 10px rgba(188, 19, 254, 0.2);
+        }
+        .btn-back:hover {
+            background: var(--neon);
+            color: black;
+            box-shadow: 0 0 30px var(--neon);
+        }
+
+        /* KHUNG TASK KÍNH NEON (Dùng chung style) */
+        .neon-card {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 220px; /* Độ rộng gốc của bạn */
+            min-height: 300px;
+            padding: 20px 25px; /* Tôi chỉnh lại padding trên-dưới đều nhau để chữ vào giữa tâm */
+            text-align: center;
+            color: var(--neon);
+            /* === LỆNH GIỮ CHỮ LUÔN Ở GIỮA (BỔ SUNG) === */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            /* NỀN KÍNH MỜ SATURATE (MÀU TÍM) */
+            background: radial-gradient(
+                circle at center,
+                rgba(188, 19, 254, 0.15) 0%, 
+                rgba(188, 19, 254, 0.05) 70%, 
+                rgba(188, 19, 254, 0.02) 100%
+            ); 
+            backdrop-filter: blur(15px) saturate(200%);
+            filter: drop-shadow(0 0 15px rgba(188, 19, 254, 1));
+            
+            /* HÌNH KHUNG BẤT ĐỐI XỨNG (GỐC) */
+            clip-path: polygon(
+                0 5%, 5% 0, 95% 0, 100% 5%, 
+                100% 90%, 92% 100%, 8% 100%, 0 92%
+            );
+
+            /* VIỀN CHÍNH MỜ (GỐC) */
+            border: 1px solid rgba(188, 19, 254, 0.15);
+            
+            position: relative;
+            cursor: pointer;
+            transition: all 0.4s ease;
+
+            animation: float-centered 6s ease-in-out infinite;
+        } 
+        /* VIỀN DÀY VÀ GÓC NHỌN (GỐC - GIỮ NGUYÊN) */
+        .neon-card::before {
+            content: "";
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: 
+                linear-gradient(to right, var(--neon) 4px, transparent 4px) 0 0,
+                linear-gradient(to bottom, var(--neon) 4px, transparent 4px) 0 0,
+                linear-gradient(to left, var(--neon) 4px, transparent 4px) 100% 0,
+                linear-gradient(to bottom, var(--neon) 10px, transparent 10px) 100% 0,
+                linear-gradient(to right, var(--neon) 15px, transparent 15px) 0 100%,
+                linear-gradient(to top, var(--neon) 4px, transparent 4px) 0 100%;
+            background-repeat: no-repeat;
+            background-size: 40px 40px;
+            pointer-events: none;
+            filter: drop-shadow(0 0 5px var(--neon));
+        }
+
+        /* THƯỚC ĐO BÊN HÔNG (GỐC - GIỮ NGUYÊN) */
+        .neon-card::after {
+            content: "";
+            position: absolute;
+            right: 10px;
+            top: 20%;
+            height: 60%;
+            width: 4px;
+            background: repeating-linear-gradient(
+                to bottom,
+                var(--neon),
+                var(--neon) 1px,
+                transparent 1px,
+                transparent 6px
+            );
+            opacity: 0.3;
+        }
+
+        /* === LAYER 1: GIAO DIỆN KHỞI CHẠY (BỤI CÔNG NGHỆ) === */
+        #layer-cover {
+            z-index: 10;
+            background: black;
+            /* Clip-path sẽ được thay đổi bằng JS để tạo hiệu ứng lau đi */
+            clip-path: inset(0 0 0 0); 
+            transition: clip-path 0.1s linear; /* Mượt mà theo tia quét */
+        }
+
+        .tech-particles {
+            position: absolute; width: 100%; height: 100%; pointer-events: none;
+        }
+        .particle {
+            position: absolute; width: 2px; height: 2px; background: var(--neon);
+            border-radius: 50%; box-shadow: 0 0 4px var(--neon);
+            animation: float 10s infinite ease-in-out; opacity: 0;
+        }
+        @keyframes float {
+            0% { opacity: 0; transform: translateY(0); }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; transform: translateY(-100px); }
+        }
+
+        .system-msg {
+            position: absolute;
+            top: 40%; left: 50%;
+            text-align: center; 
+            transform: translateX(-50%);
+            color: var(--neon);
+            font-size: 16px;
+            letter-spacing: 2px;
+            display: none; /* Mặc định ẩn */
+            text-shadow: 0 0 10px var(--neon);
+        }
+
+        /* TIA QUÉT (SCAN LINE) */
+        .scan-line {
+            position: fixed;
+            top: -10px; left: 0;
+            width: 100%;
+            height: 5px;
+            background: var(--neon);
+            box-shadow: 0 0 20px var(--neon), 0 0 40px var(--neon);
+            z-index: 100;
+            opacity: 0; /* Mặc định ẩn */
+            pointer-events: none;
+        }
+
+        /* === LAYER 2: GIAO DIỆN ẨN (BACKGROUND IMAGE) === */
+        #layer-hidden {
+            z-index: 1;
+            background: url('verify2.jpg') no-repeat center center;
+            background-size: cover;
+        }
+
+        /* POPUP NHẬP MÃ & KẾT QUẢ */
+        .popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none; justify-content: center; align-items: center;
+            z-index: 200;
+        }
+        
+        .popup-box {
+            width: 320px;
+            background: rgba(15, 0, 20, 0.95); /* Nền Tím Đậm */
+            border: 1px solid var(--neon);
+            padding: 20px;
+            text-align: center;
+            color: var(--neon);
+            box-shadow: 0 0 30px var(--neon);
+            border-radius: 6px;
+            animation: popIn 0.3s ease-out;
+            display: flex; flex-direction: column; gap: 15px;
+        }
+
+        @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+
+        /* Input Password */
+        .code-input {
+            width: 80%;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            font-size: 18px;
+            outline: none;
+            margin: 0 auto;
+        }
+        .code-input:focus { box-shadow: 0 0 15px var(--neon); }
+
+        .btn-action {
+            padding: 8px 20px;
+            background: transparent;
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+        .btn-action:hover { background: var(--neon); color: black; }
+
+        /* TRẠNG THÁI XÁC THỰC (Loading) */
+        .loading-icon { font-size: 40px; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% {transform: translateY(0);} 50% {transform: translateY(-10px);} }
+        
+        .progress-bar-container {
+            width: 100%; height: 4px; background: #333; margin-top: 10px;
+        }
+        .progress-bar {
+            width: 0%; height: 100%; background: var(--neon);
+            box-shadow: 0 0 10px var(--neon);
+        }
+
+        /* KHUNG CUỘN KẾT QUẢ */
+        .scroll-content {
+            max-height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            font-size: 12px;
+            border: 1px solid rgba(188, 19, 254, 0.3);
+            padding: 10px;
+            margin-bottom: 10px;
+            white-space: pre-wrap; /* Giữ định dạng xuống dòng */
+        }
+        /* Custom thanh cuộn */
+        .scroll-content::-webkit-scrollbar { width: 4px; }
+        .scroll-content::-webkit-scrollbar-thumb { background: var(--neon); }
+
+        /* TRẠNG THÁI SAI (ĐỎ) */
+        .error-state {
+            border-color: #ff3333 !important;
+            color: #ff3333 !important;
+            box-shadow: 0 0 30px #ff3333 !important;
+        }
+        .error-state .btn-action {
+            border-color: #ff3333 !important;
+            color: #ff3333 !important;
+        }
+        .error-state .btn-action:hover {
+            background: #ff3333 !important;
+            color: black !important;
+        }
+        /* --- HIỆU ỨNG TRÔI NỔI (Đã điều chỉnh cho thẻ căn giữa) --- */
+        @keyframes float-centered {
+            0%, 100% {
+                /* Ở vị trí thấp nhất, vẫn giữ căn giữa */
+                transform: translate(-50%, -50%);
+            }
+            50% {
+                /* Trôi lên cao 20px so với vị trí giữa */
+                transform: translate(-50%, calc(-50% - 20px));
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="scan-line" id="scanLine"></div>
+
+    <div class="full-screen" id="layer-cover">
+        <div class="tech-particles" id="particles"></div>
+        
+        <div class="system-msg" id="sysMsg">HỆ THỐNG ĐANG KHỞI CHẠY...</div>
+
+        <div class="neon-card" id="triggerCard" onclick="startScanProcess()">
+            <div>VUI LÒNG CHẠM VÀO ĐỂ<br>XÁC MINH DANH TÍNH</div>
+        </div>
+
+        <a href="admin.html" class="btn-back">BACK</a>
+    </div>
+
+    <div class="full-screen" id="layer-hidden">
+        
+        <div class="neon-card" onclick="openInputPopup()">
+            <div>CHẠM VÀO ĐỂ NHẬP MÃ NGUỒN XÁC MINH </div>
+        </div>
+
+        <a href="admin.html" class="btn-back">BACK</a>
+    </div>
+
+    <div class="popup-overlay" id="popupInput">
+        <div class="popup-box">
+            <div> XIN VUI LÒNG NHẬP MÃ NGUỒN CỦA HỆ THỐNG</div>
+            <input type="password" class="code-input" id="inputCode" placeholder="***">
+            <button class="btn-action" onclick="submitCode()">XÁC NHẬN</button>
+        </div>
+    </div>
+
+    <div class="popup-overlay" id="popupProcess">
+        <div class="popup-box">
+            <div class="loading-icon">🔎</div>
+            <div>ĐANG XÁC THỰC DỮ LIỆU...</div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="popup-overlay" id="popupResult">
+        <div class="popup-box" id="resultBox">
+            <div id="resultIcon" style="font-size: 30px; margin-bottom: 10px;">✅</div>
+            <div class="scroll-content" id="resultContent"></div>
+            <button class="btn-action" id="resultBtn" onclick="handleResultClick()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. HIỆU ỨNG BỤI (LAYER 1) ---
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 100; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.top = Math.random() * 100 + '%';
+            p.style.animationDelay = Math.random() * -5 + 's';
+            particlesContainer.appendChild(p);
+        }
+
+        // --- 2. LOGIC QUÉT SCAN (Lau lớp Cover) ---
+        function startScanProcess() {
+            const triggerCard = document.getElementById('triggerCard');
+            const sysMsg = document.getElementById('sysMsg');
+            const scanLine = document.getElementById('scanLine');
+            const cover = document.getElementById('layer-cover');
+
+            // Ẩn nút, hiện chữ
+            triggerCard.style.display = 'none';
+            sysMsg.style.display = 'block';
+
+            // Sau 2 giây -> Bắt đầu quét
+            setTimeout(() => {
+                sysMsg.style.display = 'none';
+                scanLine.style.opacity = '1';
+                
+                // Animation quét bằng JS để đồng bộ clip-path
+                let progress = 0;
+                const scanDuration = 3000; // 3 giây quét chậm
+                const startTime = performance.now();
+
+                function animateScan(time) {
+                    const elapsed = time - startTime;
+                    progress = Math.min(elapsed / scanDuration, 1);
+                    
+                    // Di chuyển tia quét
+                    scanLine.style.top = (progress * 100) + '%';
+                    
+                    // Cắt lớp cover (lau đi phần trên)
+                    // inset(top right bottom left) -> Tăng top từ 0% lên 100%
+                    cover.style.clipPath = `inset(${progress * 100}% 0 0 0)`;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animateScan);
+                    } else {
+                        // Quét xong
+                        scanLine.style.opacity = '0';
+                        cover.style.display = 'none'; // Ẩn hẳn lớp 1
+                    }
+                }
+                requestAnimationFrame(animateScan);
+
+            }, 2000);
+        }
+
+        // --- 3. LOGIC XỬ LÝ MÃ (TOÁN HỌC) ---
+        let finalAccessLevel = null; // Lưu kết quả nếu đúng
+
+        function openInputPopup() {
+            document.getElementById('popupInput').style.display = 'flex';
+            document.getElementById('inputCode').value = ''; // Reset input
+            document.getElementById('inputCode').focus();
+        }
+
+        function submitCode() {
+            const code = document.getElementById('inputCode').value;
+            if (!code) return;
+
+            // Đóng nhập -> Mở xử lý
+            document.getElementById('popupInput').style.display = 'none';
+            document.getElementById('popupProcess').style.display = 'flex';
+
+            // Chạy cây tiến trình 3s
+            const bar = document.getElementById('progressBar');
+            bar.style.transition = 'width 3s linear';
+            
+            // Hack nhỏ để trigger transition
+            setTimeout(() => { bar.style.width = '100%'; }, 100);
+
+            // Sau 3s -> Kiểm tra kết quả
+            setTimeout(() => {
+                checkLogic(code);
+            }, 3000);
+        }
+
+        function checkLogic(inputCode) {
+            document.getElementById('popupProcess').style.display = 'none';
+            const userCode = parseInt(inputCode);
+            
+            // Lấy thời gian hiện tại
+            const now = new Date();
+            const day = now.getDate();
+            const month = now.getMonth() + 1; // JS tháng bắt đầu từ 0
+            const year = now.getFullYear();
+            const hour = now.getHours();
+
+            // Công thức MỚI cho ORCHESTRATOR: (Tháng - Ngày + Năm) * Giờ
+            const baseValue = (month - day + year) * hour;
+
+            // Các trường hợp đúng: CỘNG 1, 3, 5, 7
+            const codeOrc1 = baseValue + 1;
+            const codeOrc3 = baseValue + 3;
+            const codeOrc5 = baseValue + 5;
+            const codeOrc7 = baseValue + 7;
+
+            let isSuccess = false;
+            let resultKey = '';
+
+            // Đổi Key thành ORCHESTRATOR cho phù hợp màu Tím
+            if (userCode === codeOrc1) {
+                isSuccess = true;
+                resultKey = 'ORCHESTRATOR-1';
+            } else if (userCode === codeOrc3) {
+                isSuccess = true;
+                resultKey = 'ORCHESTRATOR-3';
+            } else if (userCode === codeOrc5) {
+                isSuccess = true;
+                resultKey = 'ORCHESTRATOR-5';
+            } else if (userCode === codeOrc7) {
+                isSuccess = true;
+                resultKey = 'ORCHESTRATOR-7';
+            }
+
+            // Hiển thị kết quả
+            const resultPopup = document.getElementById('popupResult');
+            const resultBox = document.getElementById('resultBox');
+            const resultIcon = document.getElementById('resultIcon');
+            const resultContent = document.getElementById('resultContent');
+            
+            resultPopup.style.display = 'flex';
+
+            if (isSuccess) {
+                /* ============================================================
+                   TRƯỜNG HỢP: ĐÚNG (ACCESS GRANTED)
+                   ============================================================ */
+                resultBox.classList.remove('error-state');
+                resultIcon.innerHTML = '📝 ACCESS GRANTED';
+                finalAccessLevel = resultKey;
+
+                resultContent.innerHTML = `[HỆ THỐNG XÁC NHẬN THÀNH CÔNG]
+Quyền truy cập: ${resultKey}
+Các tính năng ở cấp độ ORCHESTRATOR đã mở khóa`;
+
+            } else {
+                /* ============================================================
+                   TRƯỜNG HỢP: SAI (ACCESS DENIED)
+                   ============================================================ */
+                resultBox.classList.add('error-state');
+                resultIcon.innerHTML = '❌ ACCESS DENIED';
+                finalAccessLevel = null;
+
+                resultContent.innerHTML = `[CẢNH BÁO: MÃ NGUỒN KHÔNG KHỚP]
+Trạng thái: Truy cập trái phép
+Hệ thống sẽ tự động đăng xuất!!!`;
+            }
+        }
+
+        function handleResultClick() {
+            if (finalAccessLevel) {
+                // LƯU DATA VÀO LOCAL VÀ CHUYỂN TRANG
+                localStorage.setItem('AURA_CLEARANCE_LEVEL', finalAccessLevel);
+                
+                // Reset đồng hồ đếm ngược
+                localStorage.removeItem('AURA_EXPIRY_TIMESTAMP');
+                
+                window.location.href = 'hologram0.html';
+            } else {
+                // SAI -> VỀ ADMIN
+                window.location.href = 'admin.html';
+            }
+        }
+
+    </script>
+</body>
+</html>

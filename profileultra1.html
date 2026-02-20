@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SYSTEM CONTROL PANEL</title>
+    
+    <link rel="stylesheet" href="avatarframe.css">
+    <script src="nguoigaccong.js"></script>
+    <script src="avatarframe.js"></script>
+
+    <style>
+        :root {
+            --neon: #00f2ff;
+            --bg-dark: #000000;
+            --glass: rgba(0, 242, 255, 0.05);
+            --danger: #ff3333;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-dark);
+            color: #fff;
+            font-family: 'Segoe UI', Courier, monospace;
+            overflow-x: hidden;
+            overflow-y: auto; 
+            display: block; 
+            height: auto;
+            padding-bottom: 50px; 
+        }
+
+        /* --- CÁC LỚP HIỆU ỨNG NỀN --- */
+        #meteor-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: -1; opacity: 0; transition: opacity 0.5s;
+        }
+        #weather-layer, #tech-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: -1;
+        }
+
+        /* --- CSS HIỆU ỨNG (GIỮ NGUYÊN) --- */
+        .w-particle { position: absolute; pointer-events: none; }
+        
+        .rain { 
+            background: linear-gradient(to bottom, transparent, var(--neon)); 
+            width: 1px; height: 60px; opacity: 0.8; 
+        }
+        .snow {
+            background: #ffffff;
+            border-radius: 50%;
+            opacity: 1;
+        }
+        .petal { background: #ff99cc; border-radius: 150% 0 150% 0; opacity: 0.9; }
+        .bubble { 
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.5), transparent);
+            border: 1px solid rgba(255, 255, 255, 0.7); 
+            border-radius: 50%; 
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+        }
+        .sun-dust { 
+            background: #ffd700; 
+            border-radius: 50%; 
+            box-shadow: 0 0 6px #ffd700, 0 0 12px rgba(255, 215, 0, 0.6);
+            opacity: 0.8; 
+            animation: float-dust-gold linear infinite;
+        }
+        .tech-node { 
+            position: absolute; width: 2px; height: 2px; background: var(--neon); 
+            border-radius: 50%; box-shadow: 0 0 4px var(--neon); 
+            animation: tech-float 12s ease-in-out infinite; 
+        }
+
+        @keyframes fall { 0%{transform:translateY(-10vh) translateX(0)} 100%{transform:translateY(110vh) translateX(var(--sway, 0px))} }
+        @keyframes fall-sway { 0%{transform:translateY(-10vh) rotate(0deg)} 100%{transform:translateY(110vh) rotate(360deg)} }
+        @keyframes rise { 0%{transform:translateY(0)} 100%{transform:translateY(-120vh)} }
+        @keyframes float-dust-gold {
+            0%   { transform: translateY(110vh) scale(0.3); opacity: 0; }
+            15%  { opacity: 1; }
+            80%  { opacity: 0.8; }
+            100% { transform: translateY(-20vh) scale(1); opacity: 0; }
+        }
+        @keyframes tech-float { 
+            0% { opacity: 0; transform: translate3d(0, 0, 0); } 
+            10% { opacity: 0.6; } 90% { opacity: 0.6; } 
+            100% { opacity: 0; transform: translate3d(var(--tx), var(--ty), 0); } 
+        }
+
+        /* --- THẺ NEON LỚN --- */
+        .control-card {
+            width: 90%;
+            max-width: 600px; 
+            min-height: 120vh; 
+            margin: 20px auto; 
+            background: var(--glass);
+            border: 1px solid var(--neon);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1), inset 0 0 20px rgba(0, 242, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(1px);
+            padding: 30px 20px;
+            box-sizing: border-box;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+        }
+
+        .hidden-input { display: none; }
+
+        /* --- HEADER --- */
+        .header-section {
+            display: flex;
+            align-items: center;
+            justify-content: center; 
+            gap: 30px; 
+            width: 100%;
+            margin-bottom: 25px;
+        }
+
+        .avatar-box {
+            width: 120px; 
+            height: 120px;
+            margin-left: 5px; 
+            flex-shrink: 0;
+            position: relative;
+            border-radius: 50%;
+            border: 2px solid var(--neon);
+            box-shadow: 0 0 15px var(--neon);
+            overflow: visible; 
+            background: #000;
+        }
+
+        #current-avatar {
+            width: 100%; height: 100%; object-fit: cover;
+            border-radius: 50%; position: relative; z-index: 1;
+        }
+
+        #setting-frame-target {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.85); 
+            width: 140px; height: 140px;
+            pointer-events: none; z-index: 2;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .info-box {
+            display: flex; flex-direction: column;
+            gap: 35px; align-items: flex-start; justify-content: center;
+            margin-left: -15px; 
+        }
+
+        .id-label {
+            font-size: 18px; font-weight: 900; letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #00f2ff, #fff, #00f2ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: shine 3s linear infinite;
+            text-shadow: 0 0 10px rgba(0, 242, 255, 0.6);
+            cursor: default; 
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+
+        .cmd-text {
+            font-size: 13px; color: rgba(0, 242, 255, 0.6);
+            cursor: pointer; transition: all 0.3s ease;
+            letter-spacing: 1px; text-transform: uppercase; font-weight: bold;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .cmd-text:hover {
+            color: var(--neon); text-shadow: 0 0 10px var(--neon), 0 0 20px var(--neon);
+            letter-spacing: 2px; 
+        }
+
+        .cool-separator {
+            width: 100%; text-align: center;
+            font-size: 10px; letter-spacing: 4px;
+            color: rgba(0, 242, 255, 0.4);
+            margin: 10px 0 20px 0;
+            border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+            line-height: 0.1em;
+        }
+        .cool-separator span { background:#02050a; padding: 0 10px; }
+
+        /* --- COVER (ĐÃ TĂNG MARGIN) --- */
+        .cover-section {
+            width: 100%; display: flex; flex-direction: column;
+            align-items: center; margin-bottom: 40px; 
+        }
+
+        .cover-box {
+            width: 100%; height: 200px; 
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            background-color: rgba(0,0,0,0.5);
+            background-size: cover; background-position: center;
+            position: relative; pointer-events: none; border-radius: 8px;
+            /* ĐÃ TĂNG LÊN 30PX THEO YÊU CẦU */
+            margin-bottom: 30px; 
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
+        }
+
+        /* --- COCOONS --- */
+        .cocoon-section {
+            width: 100%;
+            display: flex; flex-direction: column; align-items: center;
+            margin-top: 20px; margin-bottom: 40px;
+        }
+
+        .ultra-cocoon-frame {
+            width: 75%; height: 300px; 
+            position: relative;
+            border: 1px solid var(--neon);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+            border-radius: 12px;
+            background: #000;
+            overflow: hidden;
+            margin-bottom: 15px;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .ultra-bg-preview {
+            width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            transition: opacity 0.3s ease;
+        }
+
+        .weather-info-box { text-align: center; width: 80%; animation: fadeIn 0.5s; }
+        .weather-name {
+            font-size: 24px; font-weight: 900; color: var(--neon);
+            text-shadow: 0 0 10px var(--neon); text-transform: uppercase;
+            margin-bottom: 10px; letter-spacing: 3px;
+        }
+        .weather-desc { font-size: 11px; color: rgba(255,255,255,0.7); font-style: italic; letter-spacing: 1px; }
+
+        .ultra-label {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: rgba(0,0,0,0.7); color: var(--neon);
+            font-size: 10px; text-align: center;
+            padding: 5px 0; letter-spacing: 1px; text-transform: uppercase;
+        }
+
+        .cocoon-nav { display: flex; gap: 50px; margin-bottom: 20px; }
+        .nav-btn {
+            font-size: 30px; color: var(--neon); cursor: pointer;
+            transition: 0.3s; user-select: none; text-shadow: 0 0 5px var(--neon);
+        }
+        .nav-btn:hover { transform: scale(1.2); text-shadow: 0 0 15px var(--neon); }
+        .nav-btn:active { transform: scale(0.9); }
+
+        .cocoon-actions { display: flex; gap: 15px; width: 80%; justify-content: center; }
+        .action-btn {
+            flex: 1; padding: 10px 0; border: 1px solid; border-radius: 5px;
+            text-align: center; cursor: pointer; font-size: 11px; font-weight: bold; 
+            letter-spacing: 2px; background: rgba(0,0,0,0.8); transition: 0.3s;
+        }
+        .btn-clear { border-color: var(--danger); color: var(--danger); }
+        .btn-clear:hover { background: var(--danger); color: #fff; box-shadow: 0 0 15px var(--danger); }
+        .btn-apply { border-color: var(--neon); color: var(--neon); }
+        .btn-apply:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
+
+        /* --- NÚT BACK BO TRÒN MỚI --- */
+        .btn-back-profile {
+            margin-top: 20px;
+            padding: 12px 40px;
+            border: 1px solid var(--neon);
+            border-radius: 30px;
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--neon);
+            font-weight: bold; letter-spacing: 2px;
+            cursor: pointer; transition: 0.3s;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+        .btn-back-profile:hover {
+            background: var(--neon); color: #000;
+            box-shadow: 0 0 20px var(--neon);
+        }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="meteor-canvas"></canvas>
+    <div id="weather-layer"></div>
+    <div id="tech-layer"></div>
+
+    <input type="file" id="avatar-input" class="hidden-input" accept="image/*">
+    <input type="file" id="cover-input" class="hidden-input" accept="image/*">
+
+    <div class="control-card">
+        
+        <div class="header-section">
+            <div class="avatar-box">
+                <img id="current-avatar" src="" alt="AVATAR">
+                <div id="setting-frame-target"></div>
+            </div>
+
+            <div class="info-box">
+                <div class="id-label">ORCHESTRATOR</div>
+                <div class="cmd-text" onclick="triggerUpload('avatar')">
+                    » UPDATE AVATAR
+                </div>
+            </div>
+        </div>
+
+        <div class="cool-separator"><span>VISUAL INTERFACE CUSTOMIZATION</span></div>
+
+        <div class="cover-section">
+            <div class="cover-box" id="current-cover"></div>
+            <div class="cmd-text" onclick="triggerUpload('cover')">» UPDATE COVER</div>
+        </div>
+
+        <div class="cool-separator"><span>SPACE ENVIRONMENT CONTROL</span></div>
+        <div class="cocoon-section">
+            <div class="ultra-cocoon-frame">
+                <div class="ultra-bg-preview" id="ultraPreview"></div>
+                <div class="ultra-label" id="ultraLabel">LOADING...</div>
+            </div>
+            <div class="cocoon-nav">
+                <div class="nav-btn" onclick="switchUltraBg(-1)">‹</div>
+                <div class="nav-btn" onclick="switchUltraBg(1)">›</div>
+            </div>
+            <div class="cocoon-actions">
+                <div class="action-btn btn-clear" onclick="clearUltraBg()">RESET</div>
+                <div class="action-btn btn-apply" onclick="applyUltraBg()">INITIATE</div>
+            </div>
+        </div>
+
+        <div class="cool-separator"><span>WEATHER MODULE SYSTEM</span></div>
+        <div class="cocoon-section">
+            <div class="ultra-cocoon-frame">
+                <div class="weather-info-box" id="weatherInfoBox">
+                    <div class="weather-name" id="weatherName">LOADING...</div>
+                    <div class="weather-desc" id="weatherDesc">System Ready</div>
+                </div>
+            </div>
+            <div class="cocoon-nav">
+                <div class="nav-btn" onclick="switchWeather(-1)">‹</div>
+                <div class="nav-btn" onclick="switchWeather(1)">›</div>
+            </div>
+            <div class="cocoon-actions">
+                <div class="action-btn btn-clear" onclick="clearWeather()">RESET</div>
+                <div class="action-btn btn-apply" onclick="applyWeather()">INITIATE</div>
+            </div>
+        </div>
+
+        <button class="btn-back-profile" onclick="window.location.href='profileultra.html'">
+            BACK TO PROFILE
+        </button>
+
+        <div style="width: 100%; border-top: 1px dashed rgba(0,242,255,0.3); padding-top: 20px; text-align: center; color: rgba(255,255,255,0.3); font-size: 10px; margin-top: 20px;">
+            [ SYSTEM MODULES PENDING ]
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA ---
+        const ULTRA_BGS = Array.from({length: 10}, (_, i) => `backgroundultra${i+1}.jpg`);
+        const WEATHER_DATA = [
+            { id: 'NONE', name: 'SYSTEM STABLE', desc: 'Trạng thái ổn định' },
+            { id: 'RAIN', name: 'ACID RAIN', desc: 'Mưa Neon Axit diện rộng' },
+            { id: 'SNOW', name: 'ZERO FROST', desc: 'Tuyết vĩnh cửu nhiệt độ thấp' },
+            { id: 'PETAL', name: 'SAKURA FALL', desc: 'Cánh hoa anh đào rơi tự do' },
+            { id: 'BUBBLE', name: 'DEEP OCEAN', desc: 'Bong bóng biển sâu áp suất cao' },
+            { id: 'SUN', name: 'SOLAR DUST', desc: 'Bụi nắng mặt trời lơ lửng' },
+            { id: 'TECH', name: 'CYBER DATA', desc: 'Luồng dữ liệu công nghệ số' },
+            { id: 'METEOR', name: 'STAR FALL', desc: 'Mưa sao băng quỹ đạo thấp' }
+        ];
+
+        let currentUltraIdx = 0;
+        let currentWeatherIdx = 0; 
+
+        window.onload = function() {
+            loadVisuals();
+            updateCocoonView();
+            updateWeatherView(); 
+        };
+
+        function loadVisuals() {
+            const savedAvatar = localStorage.getItem('USER_AVATAR_BASE64');
+            if (savedAvatar) document.getElementById('current-avatar').src = savedAvatar;
+            const savedCover = localStorage.getItem('USER_COVER_BASE64');
+            if (savedCover) document.getElementById('current-cover').style.backgroundImage = `url('${savedCover}')`;
+            if (typeof AvatarFrameManager !== 'undefined') AvatarFrameManager.render('setting-frame-target');
+        }
+
+        // --- LOGIC 1: KÉN KHÔNG GIAN ---
+        function switchUltraBg(dir) {
+            currentUltraIdx += dir;
+            if (currentUltraIdx >= ULTRA_BGS.length) currentUltraIdx = 0;
+            if (currentUltraIdx < 0) currentUltraIdx = ULTRA_BGS.length - 1;
+            updateCocoonView();
+        }
+
+        function updateCocoonView() {
+            const preview = document.getElementById('ultraPreview');
+            const label = document.getElementById('ultraLabel');
+            const fileName = ULTRA_BGS[currentUltraIdx];
+            preview.style.opacity = 0;
+            setTimeout(() => {
+                preview.style.backgroundImage = `url('./${fileName}')`;
+                label.innerText = fileName;
+                preview.style.opacity = 1;
+            }, 150);
+        }
+
+        function applyUltraBg() {
+            const selectedFile = ULTRA_BGS[currentUltraIdx];
+            localStorage.setItem('AURA_ULTRA_BG', selectedFile);
+            localStorage.setItem('user_ultra_bg', selectedFile);
+            flashButton(document.querySelectorAll('.btn-apply')[0]);
+        }
+
+        function clearUltraBg() {
+            localStorage.setItem('AURA_ULTRA_BG', ''); 
+            localStorage.removeItem('user_ultra_bg');
+            flashButton(document.querySelectorAll('.btn-clear')[0], "CLEARED");
+        }
+
+        // --- LOGIC 2: KÉN THỜI TIẾT ---
+        function switchWeather(dir) {
+            currentWeatherIdx += dir;
+            if (currentWeatherIdx >= WEATHER_DATA.length) currentWeatherIdx = 0;
+            if (currentWeatherIdx < 0) currentWeatherIdx = WEATHER_DATA.length - 1;
+            updateWeatherView();
+        }
+
+        function updateWeatherView() {
+            const data = WEATHER_DATA[currentWeatherIdx];
+            const box = document.getElementById('weatherInfoBox');
+            box.style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('weatherName').innerText = data.name;
+                document.getElementById('weatherDesc').innerText = data.desc;
+                box.style.opacity = 1;
+            }, 150);
+
+            renderEffect(data.id);
+        }
+
+        function applyWeather() {
+            const data = WEATHER_DATA[currentWeatherIdx];
+            localStorage.setItem('AURA_WEATHER', data.id);
+            flashButton(document.querySelectorAll('.btn-apply')[1]);
+        }
+
+        function clearWeather() {
+            localStorage.removeItem('AURA_WEATHER');
+            renderEffect('NONE'); 
+            flashButton(document.querySelectorAll('.btn-clear')[1], "CLEARED");
+        }
+
+        // --- ENGINE HIỆU ỨNG (FIXED) ---
+        function renderEffect(type) {
+            const wLayer = document.getElementById('weather-layer');
+            const tLayer = document.getElementById('tech-layer');
+            const mCanvas = document.getElementById('meteor-canvas');
+            
+            wLayer.innerHTML = '';
+            tLayer.innerHTML = '';
+            mCanvas.style.opacity = 0; 
+
+            if (type === 'METEOR') {
+                mCanvas.style.opacity = 1;
+                initMeteorShower();
+                return;
+            }
+
+            if (type === 'TECH') {
+                initTechParticles();
+                return;
+            }
+
+            if (type === 'NONE') return;
+
+            let count = 0, className = '', animName = '';
+            if (type === 'RAIN') { count = 20; className = 'rain'; animName = 'fall'; }
+            else if (type === 'SNOW') { count = 150; className = 'snow'; animName = 'fall'; }
+            else if (type === 'PETAL') { count = 30; className = 'petal'; animName = 'fall-sway'; }
+            else if (type === 'BUBBLE') { count = 40; className = 'bubble'; animName = 'rise'; }
+            else if (type === 'SUN') { count = 40; className = 'sun-dust'; animName = 'float-dust-gold'; }
+
+            for(let i=0; i<count; i++) {
+                const p = document.createElement('div');
+                p.className = `w-particle ${className}`;
+                p.style.left = Math.random()*100+'vw';
+                p.style.animationDelay = '-' + (Math.random() * -20) + 's';
+
+                if (animName === 'rise') {
+                    p.style.bottom = '-20px';
+                    p.style.width = p.style.height = (Math.random()*15+5)+'px';
+                } else if (animName === 'float-dust-gold') {
+                    p.style.top = Math.random()*100+'vh'; 
+                    const size = Math.random() * 4 + 2;
+                    p.style.width = size + 'px';
+                    p.style.height = size + 'px';
+                } else {
+                    p.style.top = '-20px';
+                    if (type === 'SNOW') {
+                        const size = Math.random() * 5 + 3;
+                        p.style.width = size + 'px';
+                        p.style.height = size + 'px';
+                        p.style.setProperty('--sway', (Math.random() - 0.5) * 80 + 'px');
+                    } else if (type === 'PETAL') {
+                        p.style.width = p.style.height = (Math.random()*6+4)+'px';
+                    }
+                }
+
+                const dur = (type === 'SNOW') ? (Math.random()*5+4) : (Math.random()*5+4);
+                p.style.animation = `${animName} ${dur}s linear infinite`;
+                wLayer.appendChild(p);
+            }
+        }
+
+        function initTechParticles() {
+            const container = document.getElementById('tech-layer');
+            for (let i = 0; i < 60; i++) {
+                const p = document.createElement('div');
+                p.className = 'tech-node';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top = Math.random() * 100 + '%';
+                const tx = (Math.random() - 0.5) * 200 + 'px';
+                const ty = (Math.random() - 0.5) * 200 + 'px';
+                p.style.setProperty('--tx', tx);
+                p.style.setProperty('--ty', ty);
+                p.style.animationDelay = '-' + (Math.random() * 10) + 's';
+                container.appendChild(p);
+            }
+        }
+
+        function initMeteorShower() {
+            const canvas = document.getElementById('meteor-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            if (window.meteorInterval) cancelAnimationFrame(window.meteorInterval);
+
+            let meteors = [];
+            class Meteor {
+                constructor() { this.reset(); }
+                reset() {
+                    if(Math.random() > 0.5) { this.x = Math.random() * canvas.width; this.y = -100; } 
+                    else { this.x = -100; this.y = Math.random() * canvas.height; }
+                    this.len = Math.random() * 80 + 20;
+                    this.speed = Math.random() * 5 + 2; 
+                    this.size = Math.random() * 2 + 0.5;
+                }
+                update() {
+                    this.x += this.speed; this.y += this.speed;
+                    if (this.x > canvas.width + 100 || this.y > canvas.height + 100) this.reset();
+                }
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(Math.PI / 4);
+                    const gradient = ctx.createLinearGradient(0, 0, this.len, 0);
+                    gradient.addColorStop(0, "rgba(0,0,0,0)");
+                    gradient.addColorStop(1, "rgba(255,255,255,1)");
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, this.len, this.size);
+                    ctx.restore();
+                }
+            }
+            for(let i=0; i<20; i++) meteors.push(new Meteor());
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                meteors.forEach(m => { m.update(); m.draw(); });
+                window.meteorInterval = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // --- UTILS ---
+        function flashButton(btn, text="ACTIVE") {
+            const oldText = btn.innerText;
+            const oldBg = btn.style.background;
+            const oldColor = btn.style.color;
+            btn.innerText = text;
+            btn.style.background = text === "CLEARED" ? "#ff3333" : "#00f2ff";
+            btn.style.color = "#000";
+            setTimeout(() => {
+                btn.innerText = oldText;
+                btn.style.background = oldBg;
+                btn.style.color = oldColor;
+            }, 1000);
+        }
+
+        // Upload Handlers
+        function triggerUpload(type) {
+            if (type === 'avatar') document.getElementById('avatar-input').click();
+            else if (type === 'cover') document.getElementById('cover-input').click();
+        }
+        document.getElementById('avatar-input').addEventListener('change', function() {
+            if (this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    localStorage.setItem('USER_AVATAR_BASE64', e.target.result);
+                    document.getElementById('current-avatar').src = e.target.result;
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+        document.getElementById('cover-input').addEventListener('change', function() {
+            if (this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    localStorage.setItem('USER_COVER_BASE64', e.target.result);
+                    document.getElementById('current-cover').style.backgroundImage = `url('${e.target.result}')`;
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    </script>
+</body>
+</html>

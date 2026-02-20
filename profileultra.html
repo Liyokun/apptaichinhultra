@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ORCHESTRATOR HUB - LEVEL 4</title>
+    
+    <link rel="stylesheet" href="avatarframe.css">
+    <script src="nguoigaccong.js"></script>
+    <script src="avatarframe.js"></script>
+
+    <style>
+        :root {
+            --neon: #00f2ff;
+            --glass: rgba(0, 242, 255, 0.05);
+            --bg-dark: #02050a;
+        }
+
+        body {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            background: var(--bg-dark) url('./farfuture01.png') center/cover no-repeat fixed;
+            font-family: 'Segoe UI', Courier, monospace;
+            color: #fff;
+            overflow: hidden;
+            user-select: none;
+            transition: background-image 0.5s ease;
+        }
+
+        /* --- CÁC LỚP HIỆU ỨNG NỀN (MỚI) --- */
+        #meteor-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0; opacity: 0; transition: opacity 0.5s;
+        }
+        #weather-layer, #tech-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0;
+        }
+
+        /* --- CSS HIỆU ỨNG (COPY TỪ SETTINGS PANEL) --- */
+        .w-particle { position: absolute; pointer-events: none; }
+        
+        .rain { 
+            background: linear-gradient(to bottom, transparent, var(--neon)); 
+            width: 1px; height: 60px; opacity: 0.8; 
+        }
+        .snow { 
+            background: #fff; border-radius: 50%; 
+            box-shadow: 0 0 4px #fff, 0 0 8px #fff; opacity: 1 !important; 
+        }
+        .petal { background: #ff99cc; border-radius: 150% 0 150% 0; opacity: 0.9; }
+        .bubble { 
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.5), transparent);
+            border: 1px solid rgba(255, 255, 255, 0.7); border-radius: 50%; 
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+        }
+        .sun-dust { 
+            background: #ffd700; border-radius: 50%; 
+            box-shadow: 0 0 6px #ffd700, 0 0 12px rgba(255, 215, 0, 0.6); opacity: 0.8; 
+            animation: float-dust-gold linear infinite;
+        }
+        .tech-node { 
+            position: absolute; width: 2px; height: 2px; background: var(--neon); 
+            border-radius: 50%; box-shadow: 0 0 4px var(--neon); 
+            animation: tech-float 12s ease-in-out infinite; 
+        }
+
+        @keyframes fall { 0%{transform:translateY(-10vh)} 100%{transform:translateY(110vh)} }
+        @keyframes fall-sway { 0%{transform:translateY(-10vh) rotate(0deg)} 100%{transform:translateY(110vh) rotate(360deg)} }
+        @keyframes rise { 0%{transform:translateY(0)} 100%{transform:translateY(-120vh)} }
+        @keyframes float-dust-gold { 0% { transform: translateY(110vh) scale(0.3); opacity: 0; } 15% { opacity: 1; } 80% { opacity: 0.8; } 100% { transform: translateY(-20vh) scale(1); opacity: 0; } }
+        @keyframes tech-float { 0% { opacity: 0; transform: translate3d(0, 0, 0); } 10% { opacity: 0.6; } 90% { opacity: 0.6; } 100% { opacity: 0; transform: translate3d(var(--tx), var(--ty), 0); } }
+
+        /* --- 2. HUD SYSTEM --- */
+        #hud-container {
+            position: absolute; top: -20px; left: 32%; transform: translateX(-50%);
+            width: 500px; max-width: 100%; height: 250px; 
+            z-index: 10; pointer-events: none;
+        }
+
+        #hudCanvas {
+            position: absolute; top: 0; left: 0;
+            filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.2));
+        }
+
+        #profile-trigger {
+            position: absolute; top: 50px; left: 100px; 
+            width: 100px; height: 100px; border-radius: 50%;
+            cursor: pointer; pointer-events: auto; z-index: 25;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        #hud-avatar-img {
+            width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+            display: none; position: relative; z-index: 1;
+        }
+
+        #hud-frame-target {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.85); 
+            width: 140px; height: 140px;
+            pointer-events: none; z-index: 2;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* Thanh Năng Lượng */
+        .energy-core {
+            position: absolute; top: 92px; left: 230px; width: 200px;
+            text-align: left; font-family: 'Courier New', monospace; 
+            font-size: 14px; letter-spacing: 1px; color: var(--neon);
+            text-shadow: 0 0 5px var(--neon); white-space: nowrap; pointer-events: none; overflow: hidden;
+        }
+        
+        .pipe { display: inline-block; transition: 0.3s; margin-right: 1px; }
+        .pipe.active { color: var(--neon); text-shadow: 0 0 10px var(--neon); }
+        .pipe.inactive { color: rgba(0, 242, 255, 0.1); text-shadow: none; opacity: 0.5; }
+        .pipe.error { color: #ff0000; text-shadow: 0 0 5px red; animation: blink 0.5s infinite; }
+
+        /* Thông tin User - ĐÃ CHỈNH MÀU NEON */
+        .user-info-bar {
+            position: absolute; top: 175px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; 
+            font-size: 11px; letter-spacing: 3px;
+            text-transform: uppercase; 
+            color: var(--neon); /* MÀU XANH NEON */
+            -webkit-text-stroke: 0.8px var(--neon);
+            text-shadow: 
+        0 0 8px var(--neon),
+        0 0 16px var(--neon),
+        0 0 32px var(--neon);
+            font-weight: bold; width: 100%; justify-content: center;
+            opacity: 1; margin-left: 80px; 
+        }
+
+        /* Meme Weather - ĐÃ CHỈNH MÀU NEON & PRO TEXT */
+        .weather-meme-box {
+            position: absolute; top: 200px; left: 50%; transform: translateX(-50%);
+            font-size: 10px; 
+            color: var(--neon); /* MÀU XANH NEON */
+            -webkit-text-stroke: 0.7px var(--neon); /* viền neon mỏng */
+    text-shadow: 
+        0 0 10px var(--neon),
+        0 0 20px var(--neon),
+        0 0 40px var(--neon);
+            font-style: italic; text-align: center; width: 90%; 
+            margin-left: 80px; animation: fadeIn 2s;
+            letter-spacing: 3px;
+        }
+
+        /* Nav Buttons - ĐÃ CẬP NHẬT: to hơn, neon 2 lớp, bỏ popup */
+        .nav-3d-btn {
+            position: fixed; top: 50%; transform: translateY(-50%);
+            font-size: 50px; /* to hơn rất nhiều */
+            color: transparent;
+            -webkit-text-stroke: 1px var(--neon); /* lớp viền neon */
+            text-shadow: 0 0 20px var(--neon), 0 0 80px var(--neon); /* glow mạnh */
+            cursor: pointer; z-index: 50; transition: all 0.4s ease;
+            font-family: 'Courier New', monospace; font-weight: 100;
+            letter-spacing: -8px; /* giúp ký tự dày & đẹp hơn */
+            pointer-events: auto;
+        }
+        .nav-3d-btn:hover {
+            -webkit-text-stroke: 3px var(--neon);
+            text-shadow: 0 0 35px var(--neon), 0 0 70px var(--neon), 0 0 100px var(--neon);
+            transform: translateY(-50%) scale(1.25);
+        }
+        .nav-left { left: 10px; }
+        .nav-right { right: 10px; }
+
+        /* ==========================================================================
+           PHẦN MỚI CẬP NHẬT TỪ TASK_COMPONENT + LÀM MỜ NỀN SAU CARD
+           ========================================================================== */
+        .omni-deck-wrapper {
+            position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+            width: 240px; height: 340px; z-index: 55; display: none; 
+        }
+        .omni-card {
+            width: 100%; height: 100%; background: rgba(0, 242, 255, 0.03); 
+            border: 2px solid rgba(0, 242, 255, 0.5); border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1), inset 0 0 20px rgba(0, 242, 255, 0.05);
+            display: flex; flex-direction: column; align-items: center;
+            clip-path: inset(100% 0 0 0); transition: clip-path 1.1s linear 0.1s; 
+            backdrop-filter: blur(8px); /* mờ nhẹ cho chính card */
+            position: relative; overflow: hidden;
+        }
+
+        /* Lớp làm mờ nền phía sau card (chỉ ảnh hưởng vùng card) */
+        .omni-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(2, 5, 10, 0.65); /* nền tối + mờ */
+            backdrop-filter: blur(12px); /* mức mờ mạnh hơn */
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+
+        .omni-deck-wrapper[style*="display: block"] .omni-card::before {
+            opacity: 1;
+        }
+
+        .scanner-beam {
+            position: absolute; left: 0; width: 100%; height: 4px; background: #fff; 
+            box-shadow: 0 0 10px var(--neon), 0 0 20px var(--neon); opacity: 0; pointer-events: none; z-index: 60;
+        }
+        .card-header { width: 100%; display: flex; justify-content: space-between; padding: 15px; box-sizing: border-box; align-items: center;text-align: center;  }
+        .nav-card-btn { font-size: 24px; color: var(--neon); cursor: pointer; padding: 5px 15px; user-select: none; }
+        .task-title { 
+            color: var(--neon); font-weight: bold; letter-spacing: 2px; 
+            text-shadow: 0 0 5px var(--neon); text-transform: uppercase; 
+        }
+        .card-icon-area { 
+            width: 100px; height: 60px; margin: 10px 0; display: flex; justify-content: center; align-items: center; 
+            filter: drop-shadow(0 0 15px var(--neon)); 
+        }
+        .card-icon-area svg { width: 50px; height: 50px; stroke: var(--neon); fill: none; stroke-width: 1.5; }
+        .card-info {
+            width: 85%; height: 150px; background: transparent; backdrop-filter: none;
+            border: none; border-radius: 3px; margin-bottom: 10px; color: var(--neon); font-family: 'Segoe UI';
+            font-size: 12px; padding: 10px; overflow-y: auto; text-align: justify; box-sizing: border-box;
+            scrollbar-width: thin; scrollbar-color: var(--neon) transparent;
+        }
+        .card-execute-btn {
+            width: 80%; padding: 10px 0; border: 1px solid var(--neon); background: rgba(0, 242, 255, 0.15); 
+            backdrop-filter: blur(5px); color: var(--neon); font-weight: bold; letter-spacing: 2px; cursor: pointer; 
+            transition: 0.3s; border-radius: 5px; clip-path: none; margin-bottom: 15px;
+        }
+        .card-execute-btn:hover { background: var(--neon); color: #000; box-shadow: 0 0 10px var(--neon); }
+
+        .activator-container {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) scale(1.44); 
+            z-index: 70; pointer-events: none; width: max-content;
+        }
+        .task-wrapper {
+            position: relative; width: 180px; height: 60px; cursor: pointer; transition: all 0.3s;
+            -webkit-tap-highlight-color: transparent; pointer-events: auto; 
+        }
+        .svg-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+        .beam { fill: none; stroke-linecap: round; stroke-linejoin: round; transition: all 0.3s ease; }
+        .core-beam { stroke: var(--neon); stroke-width: 1.5; fill: rgba(0, 242, 255, 0.01); opacity: 1; filter: url(#neonGlow); transition: all 0.3s; pointer-events: auto; }
+        .shell-beam { stroke: var(--neon); stroke-width: 2.5; opacity: 1; filter: url(#neonGlow); transition: all 0.3s; pointer-events: none; }
+        .content {
+            position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; height: 100%; 
+            color: rgba(0, 242, 255, 0.25); font-weight: bold; letter-spacing: 2px; text-shadow: none; transition: all 0.3s ease; gap: 10px; pointer-events: none; 
+        }
+        .arrow { font-size: 20px; display: inline-block; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.3s; transform: rotate(90deg); }
+        .task-wrapper:hover .core-beam { filter: url(#strongGlow); fill: rgba(0, 242, 255, 0.05); }
+        .task-wrapper:hover .shell-beam { filter: url(#strongGlow); }
+        .task-wrapper.is-on .content { color: var(--neon); text-shadow: 0 0 10px var(--neon), 0 0 20px var(--neon); }
+        .task-wrapper.is-on .arrow { transform: rotate(-90deg); }
+        .task-wrapper.is-on .core-beam { fill: rgba(0, 242, 255, 0.15); filter: url(#strongGlow); }
+        .task-wrapper.is-on .shell-beam { stroke-width: 3; filter: url(#strongGlow); }
+        .scanning-up { animation: scanUp 2s forwards; }
+        .scanning-down { animation: scanDown 2s forwards; }
+        @keyframes scanUp { 0% { bottom: 0; opacity: 1; } 100% { bottom: 100%; opacity: 0; } }
+        @keyframes scanDown { 0% { bottom: 100%; opacity: 1; } 100% { bottom: 0; opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="meteor-canvas"></canvas>
+    <div id="weather-layer"></div>
+    <div id="tech-layer"></div>
+
+    <svg style="position: absolute; width: 0; height: 0; overflow: hidden;">
+        <defs>
+            <filter id="neonGlow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="strongGlow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1"><stop offset="10%" stop-color="white" /><stop offset="40%" stop-color="#222" /><stop offset="60%" stop-color="#222" /><stop offset="90%" stop-color="white" /></linearGradient>
+            <mask id="mask1"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad1)" /></mask>
+        </defs>
+    </svg>
+
+    <div id="hud-container">
+        <canvas id="hudCanvas"></canvas>
+        
+        <div id="profile-trigger" onclick="window.location.href='profilebasic.html'">
+            <img id="hud-avatar-img" src="" alt="Avatar">
+            <div id="hud-frame-target"></div> 
+        </div>
+
+        <div class="energy-core" id="energy-display">
+            </div>
+
+        <div class="user-info-bar">
+            <span id="user-name">LOADING...</span>
+            <span style="color:var(--neon)">|</span>
+            <span id="user-level-info">LV.0</span>
+        </div>
+        
+        <div class="weather-meme-box" id="meme-text">
+            SYSTEM STATUS: STABLE
+        </div>
+    </div>
+
+    <!-- Nav buttons cập nhật: bỏ alert, chuyển trang mới -->
+    <div class="nav-3d-btn nav-left" onclick="window.location.href='profileultra1.html'">«</div>
+    <div class="nav-3d-btn nav-right" onclick="window.location.href='profileultra2.html'">»</div>
+
+    <div class="omni-deck-wrapper" id="omni-deck">
+        <div class="scanner-beam" id="scanner"></div>
+        
+        <div class="omni-card" id="card-body">
+            <div class="card-header">
+                <div class="nav-card-btn" onclick="switchTask(-1)">&larr;</div>
+                <div class="task-title" id="task-title">INITIALIZING...</div>
+                <div class="nav-card-btn" onclick="switchTask(1)">&rarr;</div>
+            </div>
+
+            <div class="card-icon-area" id="task-icon"></div>
+
+            <div class="card-info" id="task-desc">
+                Đang tải dữ liệu nhiệm vụ hệ thống...
+            </div>
+
+            <button class="card-execute-btn" onclick="executeTask()">
+                KÍCH HOẠT
+            </button>
+        </div>
+    </div>
+
+    <div class="activator-container">
+        <div class="task-wrapper" id="toggleTask" onclick="toggleOmniDeck()">
+            <svg class="svg-container" viewBox="-20 -20 240 160">
+                <path class="beam core-beam" d="M 15,20 L 185,20 L 200,35 L 200,85 L 185,100 L 15,100 L 0,85 L 0,35 Z" />
+                <path class="beam shell-beam" mask="url(#mask1)" d="M 15,8 L 185,8 L 212,35 L 212,85 L 185,112 L 15,112 L -12,85 L -12,35 Z" />
+            </svg>
+            <div class="content">
+                <span id="textStatus">OFF</span>
+                <span class="arrow">»</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. VẼ HUD ---
+        const hudCanvas = document.getElementById('hudCanvas');
+        const hudCtx = hudCanvas.getContext('2d');
+        const W = 500; const H = 200; 
+        hudCanvas.width = W; hudCanvas.height = H;
+        const COLOR = "#00f2ff"; 
+
+        function drawHudFrame() {
+            hudCtx.clearRect(0, 0, W, H);
+            const r = 60; const barH = 55; const drawingWidth = 320; 
+            const startX = (W - drawingWidth) / 2; const cy = H / 2; const cx = startX + r;                 
+            const barStart = cx + r - 5; const barLen = startX + drawingWidth - 30;
+
+            hudCtx.shadowBlur = 0; hudCtx.strokeStyle = "rgba(0, 242, 255, 0.15)"; hudCtx.lineWidth = 1;
+            hudCtx.setLineDash([2, 4]); hudCtx.beginPath(); hudCtx.arc(cx, cy, r, 0, Math.PI * 2); hudCtx.stroke();
+            hudCtx.setLineDash([]); hudCtx.beginPath(); hudCtx.arc(cx, cy, r - 8, 0, Math.PI * 2); hudCtx.stroke();
+
+            hudCtx.strokeStyle = COLOR; hudCtx.shadowColor = COLOR; hudCtx.shadowBlur = 10; 
+            hudCtx.lineWidth = 2; hudCtx.lineCap = "round"; hudCtx.lineJoin = "round";
+            let topY = cy - (barH / 2); let botY = cy + (barH / 2);
+
+            hudCtx.beginPath();
+            hudCtx.moveTo(barStart, topY); hudCtx.lineTo(barStart + 15, topY); hudCtx.lineTo(barStart + 25, topY - 5); 
+            hudCtx.lineTo(barLen - 40, topY - 5); hudCtx.lineTo(barLen - 30, topY); hudCtx.lineTo(barLen, topY); 
+            hudCtx.lineTo(barLen + 15, cy - 8); hudCtx.lineTo(barLen + 15, cy + 8); hudCtx.lineTo(barLen, botY); 
+            hudCtx.lineTo(barStart + 80, botY); hudCtx.lineTo(barStart + 70, botY + 5); hudCtx.lineTo(barStart + 35, botY + 5); 
+            hudCtx.lineTo(barStart + 25, botY); hudCtx.lineTo(barStart, botY); hudCtx.stroke();
+
+            hudCtx.shadowBlur = 5; hudCtx.lineWidth = 1; hudCtx.beginPath();
+            hudCtx.moveTo(barStart + 40, botY + 12); hudCtx.lineTo(barStart + 100, botY + 12); hudCtx.stroke();
+            hudCtx.lineWidth = 2; hudCtx.beginPath();
+            hudCtx.moveTo(barStart + 12, topY + 8); hudCtx.lineTo(barStart + 6, botY - 8); hudCtx.stroke();
+        }
+        drawHudFrame(); 
+
+        // --- 2. LOGIC DỮ LIỆU LEVEL ---
+        function loadUltraProfile() {
+            const savedAvatar = localStorage.getItem('USER_AVATAR_BASE64');
+            const img = document.getElementById('hud-avatar-img');
+            if (savedAvatar) { img.src = savedAvatar; img.style.display = 'block'; }
+            if (typeof AvatarFrameManager !== 'undefined') AvatarFrameManager.render('hud-frame-target');
+
+            const nick = localStorage.getItem('user_nickname_core') || "USER";
+            document.getElementById('user-name').innerText = nick;
+
+            const appData = JSON.parse(localStorage.getItem('app_data_v4')) || { totalBudget: 0, wallets: [] };
+            let currentSpent = 0;
+            appData.wallets.forEach(w => currentSpent += (w.spent || 0));
+            const currentBalance = (appData.totalBudget || 0) - currentSpent;
+            
+            let totalSavings = currentBalance * 1000; 
+            const levelSize = 10000; 
+            let level = Math.floor(totalSavings / levelSize);
+            let remainder = totalSavings % levelSize;
+            let expPercent = (remainder / levelSize) * 100;
+
+            if (totalSavings < 0) {
+                level = 0; expPercent = 0;
+                document.getElementById('user-level-info').innerText = "VỠ NỢ";
+                document.getElementById('user-level-info').style.color = "#ff0000";
+            } else {
+                document.getElementById('user-level-info').innerText = "LEVEL " + level;
+            }
+
+            let totalPipes = 16; 
+            let activePipes = Math.floor((expPercent / 100) * totalPipes);
+            let pipesHtml = "";
+            for (let i = 0; i < totalPipes; i++) {
+                let statusClass = (i < activePipes) ? "active" : "inactive";
+                if (totalSavings < 0) statusClass = "error"; 
+                pipesHtml += `<span class="pipe ${statusClass}">|</span>`;
+            }
+            document.getElementById('energy-display').innerHTML = pipesHtml;
+        }
+
+        // --- TASK LOGIC ---
+        const TASKS = [
+            { id: 'daily', name: 'CHI TIÊU', icon: '<path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>', desc: 'Quản lý các khoản chi tiêu hàng ngày. Ghi chép nhanh chóng các giao dịch mua sắm và sinh hoạt phí.', link: 'index.html?task=daily' },
+            { id: 'budget', name: 'BIẾN ĐỘNG', icon: '<path d="M18 20V10M12 20V4M6 20v-6"/>', desc: 'Theo dõi sự biến động của ngân sách theo thời gian thực. Kiểm soát dòng tiền vào và ra để cân đối tài chính.', link: 'index.html?task=budget' },
+            { id: 'status', name: 'AI SOI VÍ', icon: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>', desc: 'Sử dụng trí tuệ nhân tạo để phân tích dòng tiền và đưa ra các cảnh báo quan trọng.', link: 'index.html?task=status' },
+            { id: 'history', name: 'LỊCH SỬ', icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>', desc: 'Tra cứu lại toàn bộ lịch sử giao dịch. Tìm kiếm và lọc các hoạt động tài chính trong quá khứ.', link: 'index.html?task=history' },
+            { id: 'alloc', name: 'PHÂN BỔ', icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06-.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06-.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>', desc: 'Phân bổ nguồn ngân sách vào các hạng mục chi tiêu hoặc tiết kiệm khác nhau để theo dõi chặt chẽ dòng tiền.', link: 'index.html?task=alloc' },
+            { id: 'settings', name: 'CÀI ĐẶT', icon: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>', desc: 'Tùy chỉnh các thông số hệ thống, giao diện và các thiết lập cá nhân hóa.', link: 'index.html?task=settings' },
+            { id: 'bieudo', name: 'DỮ LIỆU SỐ', icon: '<path d="M21 21H3V3"/><path d="M18 17l-6-6-4 4-5-5"/>', desc: 'Truy cập vào trung tâm dữ liệu số hóa. Xem các biểu đồ thống kê phức tạp và báo cáo chi tiết.', link: 'bieudo.html' },
+            { id: 'lenhai', name: 'PHÂN TÍCH AI', icon: '<rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/>', desc: 'Kích hoạt module phân tích chuyên sâu bằng AI để dự báo xu hướng và phát hiện bất thường.', link: 'lenhAI.html' },
+            { id: 'vip', name: 'NÂNG CẤP', icon: '<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>', desc: 'Truy cập khu vực dành riêng cho thành viên VIP. Mở khóa các tính năng đặc quyền và giới hạn cao hơn.', link: 'vip.html' },
+            { id: 'baomat', name: 'BẢO MẬT', icon: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>', desc: 'Quản lý các lớp bảo mật hệ thống, thay đổi mật khẩu và kiểm soát quyền truy cập.', link: 'baomat.html' },
+            { id: 'time', name: 'LỊCH', icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>', desc: 'Xem lịch trình hệ thống, đặt nhắc nhở và quản lý các sự kiện quan trọng theo thời gian thực.', link: 'time.html' },
+            { id: 'uocnguyen', name: 'ƯỚC NGUYỆN', icon: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>', desc: 'Quản lý danh sách ước nguyện và các mục tiêu dài hạn cần đạt được trong tương lai.', link: 'uocnguyen.html' }
+        ];
+
+        let currentIdx = 0; let isOpen = false; let closeTimer = null; 
+
+        function toggleOmniDeck() {
+            const wrapper = document.getElementById('omni-deck');
+            const card = document.getElementById('card-body');
+            const scanner = document.getElementById('scanner');
+            const task = document.getElementById('toggleTask');
+            const text = document.getElementById('textStatus');
+
+            if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+
+            if (!isOpen) {
+                wrapper.style.display = 'block';
+                scanner.classList.remove('scanning-down');
+                void scanner.offsetWidth; 
+                scanner.classList.add('scanning-up');
+                card.style.clipPath = 'inset(0 0 0 0)';
+                task.classList.add('is-on');
+                text.innerText = "ON";
+                isOpen = true;
+            } else {
+                scanner.classList.remove('scanning-up');
+                void scanner.offsetWidth; 
+                scanner.classList.add('scanning-down');
+                card.style.clipPath = 'inset(100% 0 0 0)';
+                task.classList.remove('is-on');
+                text.innerText = "OFF";
+                closeTimer = setTimeout(() => { wrapper.style.display = 'none'; closeTimer = null; }, 2000); 
+                isOpen = false;
+            }
+        }
+
+        function switchTask(dir) {
+            currentIdx += dir;
+            if (currentIdx >= TASKS.length) currentIdx = 0;
+            if (currentIdx < 0) currentIdx = TASKS.length - 1;
+            const card = document.getElementById('card-body');
+            card.style.transition = 'opacity 0.2s';
+            card.style.opacity = '0';
+            setTimeout(() => {
+                renderData();
+                card.style.opacity = '1';
+                setTimeout(() => { card.style.transition = 'clip-path 1.1s linear 0.1s'; }, 200);
+            }, 200);
+        }
+
+        function renderData() {
+            const t = TASKS[currentIdx];
+            document.getElementById('task-title').innerText = t.name;
+            document.getElementById('task-desc').innerText = t.desc;
+            document.getElementById('task-icon').innerHTML = `<svg viewBox="0 0 24 24">${t.icon}</svg>`;
+        }
+
+        function executeTask() {
+            const link = TASKS[currentIdx].link;
+            if(link) window.location.href = link;
+        }
+
+        // ========================================================
+        // --- 3. BỘ THU TÍN HIỆU + ENGINE HIỆU ỨNG (NÂNG CẤP) ---
+        // ========================================================
+
+        // 1. LẮNG NGHE LỆNH
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'AURA_WEATHER') renderEffect(e.newValue);
+            if (e.key === 'AURA_ULTRA_BG') {
+                if(e.newValue) document.body.style.backgroundImage = `url('./${e.newValue}')`;
+                else document.body.style.backgroundImage = `url('./farfuture01.png')`;
+            }
+        });
+
+        // 2. KHỞI TẠO (ONLOAD)
+        window.onload = function() {
+            drawHudFrame();
+            loadUltraProfile();
+            renderData();
+            
+            // Load Hình Nền
+            const savedUltraBg = localStorage.getItem('user_ultra_bg');
+            if(savedUltraBg) document.body.style.backgroundImage = `url('./${savedUltraBg}')`;
+            else document.body.style.backgroundImage = `url('./farfuture01.png')`;
+
+            // Load Thời Tiết (Fix: Gọi renderEffect thay vì applyWeather cũ)
+            const savedWeather = localStorage.getItem('AURA_WEATHER');
+            if(savedWeather) renderEffect(savedWeather);
+            else renderEffect('NONE'); // Mặc định stable
+        };
+
+        // 3. ENGINE HIỆU ỨNG (TỪ SETTINGS PANEL)
+        function renderEffect(type) {
+            const wLayer = document.getElementById('weather-layer');
+            const tLayer = document.getElementById('tech-layer');
+            const mCanvas = document.getElementById('meteor-canvas');
+            const meme = document.getElementById('meme-text');
+            
+            // Reset
+            wLayer.innerHTML = '';
+            tLayer.innerHTML = '';
+            mCanvas.style.opacity = 0; 
+
+            // Cập nhật Text dự báo (Màu Neon Xanh)
+            let msg = "SYSTEM STATUS: STABLE";
+            if (type === 'RAIN') msg = "ENVIRONMENT: ACID RAIN SEQUENCE ACTIVE";
+            else if (type === 'SNOW') msg = "ENVIRONMENT: ZERO KELVIN FROST DETECTED";
+            else if (type === 'PETAL') msg = "ENVIRONMENT: SAKURA SEASONAL WIND";
+            else if (type === 'BUBBLE') msg = "ENVIRONMENT: DEEP SEA PRESSURE NORMAL";
+            else if (type === 'SUN') msg = "ENVIRONMENT: SOLAR DUST RADIATION HIGH";
+            else if (type === 'TECH') msg = "SYSTEM: DATA STREAM SYNCHRONIZATION";
+            else if (type === 'METEOR') msg = "WARNING: ORBITAL METEOR SHOWER INBOUND";
+            
+            meme.innerText = msg;
+
+            if (type === 'METEOR') {
+                mCanvas.style.opacity = 1;
+                initMeteorShower();
+                return;
+            }
+
+            if (type === 'TECH') {
+                initTechParticles();
+                return;
+            }
+
+            if (type === 'NONE' || !type) return;
+
+            let count = 0, className = '', animName = '';
+            if (type === 'RAIN') { count = 60; className = 'rain'; animName = 'fall'; }
+            else if (type === 'SNOW') { count = 50; className = 'snow'; animName = 'fall'; }
+            else if (type === 'PETAL') { count = 30; className = 'petal'; animName = 'fall-sway'; }
+            else if (type === 'BUBBLE') { count = 40; className = 'bubble'; animName = 'rise'; }
+            else if (type === 'SUN') { count = 40; className = 'sun-dust'; animName = 'float-dust-gold'; }
+
+            for(let i=0; i<count; i++) {
+                const p = document.createElement('div');
+                p.className = `w-particle ${className}`;
+                p.style.left = Math.random()*100+'vw';
+                
+                // Random Delay ÂM
+                p.style.animationDelay = '-' + (Math.random() * 20) + 's';
+
+                if (animName === 'rise') {
+                    p.style.bottom = '-20px';
+                    p.style.width = p.style.height = (Math.random()*15+5)+'px';
+                } else if (animName === 'float-dust-gold') {
+                    p.style.top = Math.random()*100+'vh'; 
+                    const size = Math.random() * 4 + 2;
+                    p.style.width = size + 'px';
+                    p.style.height = size + 'px';
+                } else {
+                    p.style.top = '-20px';
+                    if (type === 'SNOW' || type === 'PETAL') p.style.width = p.style.height = (Math.random()*6+4)+'px';
+                }
+
+                p.style.animation = `${animName} ${Math.random()*5+4}s linear infinite`;
+                wLayer.appendChild(p);
+            }
+        }
+
+        function initTechParticles() {
+            const container = document.getElementById('tech-layer');
+            for (let i = 0; i < 60; i++) {
+                const p = document.createElement('div');
+                p.className = 'tech-node';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top = Math.random() * 100 + '%';
+                const tx = (Math.random() - 0.5) * 200 + 'px';
+                const ty = (Math.random() - 0.5) * 200 + 'px';
+                p.style.setProperty('--tx', tx);
+                p.style.setProperty('--ty', ty);
+                p.style.animationDelay = '-' + (Math.random() * 10) + 's';
+                container.appendChild(p);
+            }
+        }
+
+        function initMeteorShower() {
+            const canvas = document.getElementById('meteor-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            if (window.meteorInterval) cancelAnimationFrame(window.meteorInterval);
+
+            let meteors = [];
+            class Meteor {
+                constructor() { this.reset(); }
+                reset() {
+                    if(Math.random() > 0.5) { this.x = Math.random() * canvas.width; this.y = -100; } 
+                    else { this.x = -100; this.y = Math.random() * canvas.height; }
+                    this.len = Math.random() * 80 + 20;
+                    this.speed = Math.random() * 5 + 2; 
+                    this.size = Math.random() * 2 + 0.5;
+                }
+                update() {
+                    this.x += this.speed; this.y += this.speed;
+                    if (this.x > canvas.width + 100 || this.y > canvas.height + 100) this.reset();
+                }
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(Math.PI / 4);
+                    // Dải màu đảo ngược để đầu sao băng hướng đúng
+                    const gradient = ctx.createLinearGradient(0, 0, this.len, 0);
+                    gradient.addColorStop(0, "rgba(0,0,0,0)");
+                    gradient.addColorStop(1, "rgba(255,255,255,1)");
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, this.len, this.size);
+                    ctx.restore();
+                }
+            }
+            for(let i=0; i<20; i++) meteors.push(new Meteor());
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                meteors.forEach(m => { m.update(); m.draw(); });
+                window.meteorInterval = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+    </script>
+</body>
+</html>

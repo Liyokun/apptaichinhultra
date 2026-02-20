@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="internet.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DATA CORE - BIỂU ĐỒ</title>
     <style>
@@ -12,6 +13,8 @@
             background: #02050a url('./farfuture01.png') center bottom / cover no-repeat fixed;
             font-family: 'Segoe UI', sans-serif; color: #fff; 
             overflow: hidden; user-select: none;
+            /* Thêm hiệu ứng chuyển nền mượt mà */
+            transition: background-image 0.5s ease-in-out;
         }
 
         /* --- 2. HIỆU ỨNG (GIỮ NGUYÊN) --- */
@@ -182,14 +185,28 @@
         </div>
     </div>
 
-    <div class="back-circle" onclick="window.location.href='./hologram0.html'">
+    <div class="back-circle" onclick="window.location.href='./hologram1.html'">
         <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--neon)" stroke-width="2" fill="none"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </div>
 
     <script>
+        // --- HỆ THỐNG THU PHÁT TÍN HIỆU NỀN ---
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'AURA_COMMAND_BG' && e.newValue) {
+                const targetBg = e.newValue;
+                document.body.style.backgroundImage = `url('./${targetBg}')`;
+                localStorage.setItem('user_lobby_bg', targetBg);
+                console.log("Data Core: Đã đồng bộ nền -> " + targetBg);
+            }
+        });
+
         window.onload = function() {
             const savedBg = localStorage.getItem('user_lobby_bg');
-            if (savedBg) document.body.style.backgroundImage = `url('./${savedBg}')`;
+            if (savedBg) {
+                document.body.style.backgroundImage = `url('./${savedBg}')`;
+            } else {
+                document.body.style.backgroundImage = `url('./farfuture01.png')`;
+            }
         };
 
         function createDust() {
@@ -255,5 +272,6 @@
             }, 1500);
         }
     </script>
+    <script src="internet.js"></script>
 </body>
 </html>

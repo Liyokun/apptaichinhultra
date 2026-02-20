@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <title>AURA SECURITY GATE</title>
+    
+    <link rel="stylesheet" href="keyboard.css">
+    <script src="keyboard.js"></script>
+
+    <style>
+        /* =========================================
+           1. CORE STYLE (GIỮ NGUYÊN KHÔNG CHỈNH SỬA)
+           ========================================= */
+        :root {
+            --neon: #00f2ff;
+            --bg-color: #000a0f;
+            --glass-bg: rgba(0, 15, 20, 0.85);
+            --danger: #ff3333;
+            --success: #00ff88;
+        }
+
+        body {
+            margin: 0; height: 100vh; background-color: black;
+            overflow: hidden; font-family: 'Courier New', monospace;
+            user-select: none;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .full-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+
+        /* NÚT BACK CỦA TRANG CHÍNH */
+        .btn-back {
+            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+            padding: 10px 40px; color: var(--neon); background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--neon); backdrop-filter: blur(5px);
+            cursor: pointer; font-weight: bold; letter-spacing: 2px; transition: 0.3s;
+            z-index: 1; text-decoration: none; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+        }
+        .btn-back:hover { background: var(--neon); color: black; box-shadow: 0 0 30px var(--neon); }
+
+        /* NEON CARD */
+        .neon-card {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 220px; min-height: 250px; padding: 20px 25px;
+            text-align: center; color: var(--neon);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, rgba(0, 242, 255, 0.15) 0%, rgba(0, 242, 255, 0.05) 70%, rgba(0, 242, 255, 0.02) 100%);
+            backdrop-filter: blur(15px) saturate(200%);
+            filter: drop-shadow(0 0 15px rgba(0, 242, 255, 1));
+            clip-path: polygon(0 5%, 5% 0, 95% 0, 100% 5%, 100% 90%, 92% 100%, 8% 100%, 0 92%);
+            border: 1px solid rgba(0, 242, 255, 0.15);
+            cursor: pointer; transition: all 0.4s ease;
+            z-index: 30;
+            animation: float-centered 6s ease-in-out infinite;
+        }
+
+        /* TASK CARD */
+        .task-card {
+            min-height: 120px !important;
+            width: 220px;
+            padding: 15px;
+        }
+
+        .neon-card::before {
+            content: ""; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(to right, var(--neon) 4px, transparent 4px) 0 0, linear-gradient(to bottom, var(--neon) 4px, transparent 4px) 0 0, linear-gradient(to left, var(--neon) 4px, transparent 4px) 100% 0, linear-gradient(to bottom, var(--neon) 10px, transparent 10px) 100% 0, linear-gradient(to right, var(--neon) 15px, transparent 15px) 0 100%, linear-gradient(to top, var(--neon) 4px, transparent 4px) 0 100%;
+            background-repeat: no-repeat; background-size: 40px 40px; pointer-events: none; filter: drop-shadow(0 0 5px var(--neon));
+        }
+
+        .neon-card::after {
+            content: ""; position: absolute; right: 10px; top: 20%; height: 60%; width: 4px;
+            background: repeating-linear-gradient(to bottom, var(--neon), var(--neon) 1px, transparent 1px, transparent 6px); opacity: 0.3;
+        }
+
+        @keyframes float-centered {
+            0%, 100% { transform: translate(-50%, -50%); }
+            50% { transform: translate(-50%, calc(-50% - 20px)); }
+        }
+
+        /* --- LAYER 1 --- */
+        #layer-cover {
+            z-index: 20; background: black;
+            clip-path: inset(0 0 0 0); 
+            transition: background 0.5s ease; 
+        }
+
+        .tech-particles { position: absolute; width: 100%; height: 100%; pointer-events: none; }
+        .particle {
+            position: absolute; width: 2px; height: 2px; background: var(--neon);
+            border-radius: 50%; box-shadow: 0 0 4px var(--neon);
+            animation: float 10s infinite ease-in-out; opacity: 0;
+        }
+        @keyframes float { 0% {opacity:0; transform:translateY(0);} 50% {opacity:0.8;} 100% {opacity:0; transform:translateY(-100px);} }
+
+        .system-msg {
+            position: absolute; top: 40%; left: 50%; transform: translateX(-50%);
+            text-align: center; color: var(--neon); font-size: 16px; letter-spacing: 2px;
+            display: none; text-shadow: 0 0 10px var(--neon); width: 100%; z-index: 40;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px 0;
+            backdrop-filter: blur(2px);
+        }
+
+        /* --- [NEW] LOADING SPINNER --- */
+        .loading-spinner {
+            display: inline-block;
+            margin-top: 15px;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(0, 242, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--neon);
+            animation: spin 1s ease-in-out infinite;
+            box-shadow: 0 0 10px var(--neon);
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .scan-line {
+            position: fixed; top: -10px; left: 0; width: 100%; height: 5px;
+            background: var(--neon); box-shadow: 0 0 20px var(--neon), 0 0 40px var(--neon);
+            z-index: 100; opacity: 0; pointer-events: none;
+        }
+
+        /* --- LAYER 2 --- */
+        #layer-hidden {
+            z-index: 1;
+            background: url('verify3.jpg') no-repeat center center;
+            background-size: cover;
+            transition: opacity 0.5s ease;
+        }
+
+        .secure-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.1);
+        }
+        .mode-active .secure-overlay { opacity: 1; }
+
+        .task-top { top: 25%; } 
+        .task-bottom { top: 60%; }
+
+        .task-label { font-size: 12px; opacity: 0.8; letter-spacing: 2px; margin-bottom: 5px; }
+        .task-status { font-size: 18px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+        .status-on { color: var(--success); text-shadow: 0 0 10px var(--success); }
+        .status-off { color: var(--danger); text-shadow: 0 0 10px var(--danger); }
+
+        /* POPUP */
+        .popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 200;
+            display: none; justify-content: center; align-items: center;
+        }
+        .popup-box {
+            width: 320px; background: rgba(0, 15, 20, 0.95); border: 1px solid var(--neon);
+            padding: 20px; text-align: center; color: var(--neon);
+            box-shadow: 0 0 30px var(--neon); border-radius: 6px;
+            display: flex; flex-direction: column; gap: 15px; animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+
+        .code-input {
+            width: 100%; padding: 10px; background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon); color: var(--neon);
+            font-family: 'Courier New', monospace; text-align: center; font-size: 18px; outline: none; margin: 0 auto;
+        }
+        .btn-action {
+            padding: 8px 20px; background: transparent; border: 1px solid var(--neon); color: var(--neon);
+            cursor: pointer; font-weight: bold; transition: 0.3s; margin-top: 10px;
+        }
+        .btn-action:hover { background: var(--neon); color: black; }
+        .msg-error { color: var(--danger); font-size: 12px; display: none; }
+
+        /* KEYPAD CONTAINER */
+        #keypad-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 999;
+            display: none; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scan-line" id="scanLine"></div>
+
+    <div class="full-screen" id="layer-cover">
+        <div class="tech-particles" id="particles"></div>
+        
+        <div class="system-msg" id="sysMsg">
+            <div>HỆ THỐNG ĐANG KHỞI CHẠY...</div>
+            <div class="loading-spinner"></div>
+        </div>
+
+        <div class="neon-card" id="triggerCard" onclick="handleTriggerClick()">
+            <div>CHẠM ĐỂ KHỞI ĐỘNG<br>HỆ THỐNG BẢO MẬT</div>
+        </div>
+
+        <a href="hologram1.html" class="btn-back">BACK</a>
+    </div>
+
+    <div class="full-screen" id="layer-hidden">
+        <div class="secure-overlay"></div>
+        
+        <div class="neon-card task-card task-top" id="btnToggle" onclick="requestAction('TOGGLE')">
+            <div class="task-label">TRẠNG THÁI HỆ THỐNG</div>
+            <div class="task-status status-off" id="statusText">ĐANG TẮT</div>
+        </div>
+
+        <div class="neon-card task-card task-bottom" onclick="requestAction('CHANGE_PASS')">
+            <div class="task-label">CẤU HÌNH</div>
+            <div class="task-status">ĐỔI MẬT MÃ</div>
+        </div>
+
+        <a href="hologram1.html" class="btn-back">BACK</a>
+    </div>
+
+    <div class="popup-overlay" id="popupNewPass">
+        <div class="popup-box">
+            <div id="popupTitle">THIẾT LẬP MÃ BẢO MẬT</div>
+            <div style="font-size: 12px; opacity: 0.7;">Vui lòng nhập mã số (0-9)</div>
+            <input type="text" class="code-input" id="inputNewPass" placeholder="******" maxlength="8">
+            <div class="msg-error" id="msgError">⚠️ XIN VUI LÒNG CHỈ NHẬP SỐ!</div>
+            <button class="btn-action" onclick="saveNewPass()">KÍCH HOẠT</button>
+        </div>
+    </div>
+
+    <div id="keypad-container">
+        <div class="tech-frame-container">
+            <div class="neon-frame">
+                <div class="tech-details-left">
+                    <div class="tech-bar-left"></div>
+                    <div class="tech-lines-left">
+                        <div class="line"></div><div class="line"></div><div class="line"></div>
+                    </div>
+                </div>
+                <div class="tech-details-right">
+                    <div class="tech-bar-right"></div>
+                    <div class="tech-lines-right">
+                        <div class="line"></div><div class="line"></div><div class="line"></div>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="transparent-card">
+                <div class="auth-text" id="kpTitle">XÁC MINH QUYỀN TRUY CẬP</div>
+    
+                <div class="input-display neon-display"></div>
+    
+                <div class="keypad-grid neon-grid">
+                    <div class="key-btn" onclick="AuraKeypad.press(1, event)">1</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(2, event)">2</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(3, event)">3</div>
+                    
+                    <div class="key-btn" onclick="AuraKeypad.press(4, event)">4</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(5, event)">5</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(6, event)">6</div>
+                    
+                    <div class="key-btn" onclick="AuraKeypad.press(7, event)">7</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(8, event)">8</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(9, event)">9</div>
+                    
+                    <div class="key-btn btn-cancel" onclick="AuraKeypad.clear(event)">CANCEL</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(0, event)">0</div>
+                    <div class="key-btn btn-ok" onclick="AuraKeypad.submit(event)">ENTER</div>
+                </div>
+    
+                <div class="back-btn" onclick="closeKeypadOnly()">
+                    &lt; BACK
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const STORAGE_PASS = "AURA_PASS_KEY";
+        const STORAGE_STATUS = "AURA_SEC_STATUS";
+        
+        let currentAction = null;
+
+        window.onload = function() {
+            createParticles();
+            checkAndLoadUI(); 
+        };
+
+        function checkAndLoadUI() {
+            const savedPass = localStorage.getItem(STORAGE_PASS);
+
+            if (savedPass) {
+                document.getElementById('layer-cover').style.display = 'none';
+                document.getElementById('layer-hidden').style.opacity = '1';
+                document.getElementById('layer-hidden').style.pointerEvents = 'auto';
+                
+                localStorage.setItem(STORAGE_STATUS, "ON");
+                updateUIStatus();
+            } else {
+                document.getElementById('layer-cover').style.display = 'block';
+                
+                const hiddenLayer = document.getElementById('layer-hidden');
+                hiddenLayer.style.opacity = '0'; 
+                hiddenLayer.style.pointerEvents = 'none'; 
+                
+                localStorage.setItem(STORAGE_STATUS, "OFF");
+                updateUIStatus();
+            }
+        }
+
+        function handleTriggerClick() {
+            openPopupNewPass("THIẾT LẬP MẬT MÃ");
+        }
+
+        function saveNewPass() {
+            const val = document.getElementById('inputNewPass').value;
+            const err = document.getElementById('msgError');
+            
+            if (/^\d+$/.test(val)) {
+                localStorage.setItem(STORAGE_PASS, val);
+                localStorage.setItem(STORAGE_STATUS, "ON");
+                
+                document.getElementById('popupNewPass').style.display = 'none';
+                
+                if (document.getElementById('layer-cover').style.display !== 'none') {
+                    runScanAnimation();
+                } else {
+                    updateUIStatus();
+                }
+            } else {
+                err.style.display = 'block';
+            }
+        }
+
+        // --- HÀM SỬA ĐỔI: ẨN NÚT BACK CỦA LAYER 1 KHI LOADING ---
+        function runScanAnimation() {
+            const triggerCard = document.getElementById('triggerCard');
+            const sysMsg = document.getElementById('sysMsg');
+            const scanLine = document.getElementById('scanLine');
+            const cover = document.getElementById('layer-cover');
+            
+            // 1. Ẩn nút kích hoạt
+            triggerCard.style.display = 'none';
+            
+            // 2. ẨN NÚT BACK CỦA LAYER 1 ĐỂ NÓ KHÔNG ĐÈ LÊN BACKGROUND LOADING
+            const backBtnLayer1 = document.querySelector('#layer-cover .btn-back');
+            if(backBtnLayer1) backBtnLayer1.style.display = 'none';
+
+            // 3. Hiện thông báo loading và spinner
+            sysMsg.style.display = 'block';
+
+            // 4. Set background tạm thời 'loading0.jpg'
+            cover.style.background = "url('loading0.jpg') no-repeat center center";
+            cover.style.backgroundSize = "cover";
+
+            // 5. Chờ 3 giây (3000ms) - Đã sửa lại từ 100000
+            setTimeout(() => {
+                sysMsg.style.display = 'none'; 
+                scanLine.style.opacity = '1'; 
+
+                let progress = 0;
+                const scanDuration = 2500; 
+                const startTime = performance.now();
+
+                function animateScan(time) {
+                    const elapsed = time - startTime;
+                    progress = Math.min(elapsed / scanDuration, 1);
+                    
+                    scanLine.style.top = (progress * 100) + '%';
+                    cover.style.clipPath = `inset(${progress * 100}% 0 0 0)`;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animateScan);
+                    } else {
+                        scanLine.style.opacity = '0';
+                        cover.style.display = 'none'; 
+                        
+                        const hiddenLayer = document.getElementById('layer-hidden');
+                        hiddenLayer.style.opacity = '1';
+                        hiddenLayer.style.pointerEvents = 'auto'; 
+                        
+                        updateUIStatus();
+                    }
+                }
+                requestAnimationFrame(animateScan);
+            }, 3000); 
+        }
+
+        function requestAction(actionType) {
+            currentAction = actionType;
+            const kpTitle = document.getElementById('kpTitle');
+            const kpContainer = document.getElementById('keypad-container');
+            
+            const hasPass = localStorage.getItem(STORAGE_PASS);
+
+            if (actionType === 'TOGGLE') {
+                if (hasPass) {
+                    kpTitle.innerText = "VUI LÒNG NHẬP MẬT MÃ";
+                    openKeypad();
+                } else {
+                    openPopupNewPass("THIẾT LẬP LẠI MẬT MÃ");
+                }
+            } else if (actionType === 'CHANGE_PASS') {
+                if (hasPass) {
+                    kpTitle.innerText = "XÁC MINH MẬT MÃ CŨ";
+                    openKeypad();
+                } else {
+                    alert("Chưa có mật mã để đổi!");
+                }
+            }
+        }
+
+        function openKeypad() {
+            const kpContainer = document.getElementById('keypad-container');
+            kpContainer.style.display = 'flex';
+            if (typeof AuraKeypad !== 'undefined') {
+                AuraKeypad.init((code) => handleKeypadSubmit(code));
+            }
+        }
+
+        function handleCancel(e) {
+            if (typeof AuraKeypad !== 'undefined') AuraKeypad.clear(e);
+            document.getElementById('keypad-container').style.display = 'none';
+        }
+
+        function closeKeypadOnly() {
+            document.getElementById('keypad-container').style.display = 'none';
+            currentAction = null;
+        }
+
+        function handleKeypadSubmit(inputCode) {
+            const correctPass = localStorage.getItem(STORAGE_PASS); 
+
+            if (inputCode === correctPass) {
+                document.getElementById('keypad-container').style.display = 'none';
+                
+                if (currentAction === 'TOGGLE') {
+                    performSystemReset();
+                } else if (currentAction === 'CHANGE_PASS') {
+                    openPopupNewPass("THIẾT LẬP MẬT MÃ MỚI");
+                }
+            } else {
+                if (typeof AuraKeypad !== 'undefined') AuraKeypad.showError("MÃ KHÔNG ĐÚNG");
+            }
+        }
+
+        function performSystemReset() {
+            localStorage.removeItem(STORAGE_PASS);
+            localStorage.setItem(STORAGE_STATUS, "OFF");
+            updateUIStatus();
+        }
+
+        function openPopupNewPass(title) {
+            document.getElementById('popupTitle').innerText = title || "THIẾT LẬP MÃ BẢO MẬT";
+            document.getElementById('popupNewPass').style.display = 'flex';
+            document.getElementById('inputNewPass').value = '';
+            document.getElementById('inputNewPass').focus();
+            document.getElementById('msgError').style.display = 'none';
+        }
+
+        function updateUIStatus() {
+            const hasPass = localStorage.getItem(STORAGE_PASS);
+            const txt = document.getElementById('statusText');
+            const body = document.body;
+
+            if (hasPass) {
+                txt.innerText = "ĐANG BẬT";
+                txt.className = "task-status status-on";
+                body.classList.add('mode-active');
+            } else {
+                txt.innerText = "ĐANG TẮT";
+                txt.className = "task-status status-off";
+                body.classList.remove('mode-active');
+            }
+        }
+
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for(let i=0; i<100; i++) {
+                let p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random()*100+'%';
+                p.style.top = Math.random()*100+'%';
+                p.style.animationDelay = (Math.random() * -2) + 's';
+                container.appendChild(p);
+            }
+        }
+    </script>
+</body>
+</html>

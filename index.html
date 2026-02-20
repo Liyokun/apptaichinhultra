@@ -2,11 +2,75 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="internet.css">
     <title>Finance Dashboard Dynamic</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="design.css">
+    
+    <link rel="stylesheet" href="keyboard.css">
+    <script src="keyboard.js"></script>
+
+    <script src="nguoigaccong.js"></script>
+    
+    <style>
+        body { visibility: hidden; background-color: #000; }
+        /* Bàn phím luôn hiển thị được kể cả khi body ẩn */
+        #global-keypad-lock { visibility: visible; }
+    </style>
 </head>
 <body data-theme="light">
+
+    <div id="global-keypad-lock" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; display: none; justify-content: center; align-items: center;">
+        <div class="tech-frame-container">
+            <div class="neon-frame">
+                <div class="tech-details-left"><div class="tech-bar-left"></div></div>
+                <div class="tech-details-right"><div class="tech-bar-right"></div></div>
+            </div>
+
+            <div class="transparent-card">
+                <div class="auth-text">VUI LÒNG NHẬP MẬT MÃ</div>
+                <div class="input-display neon-display"></div>
+                <div class="keypad-grid neon-grid">
+                    <div class="key-btn" onclick="AuraKeypad.press(1, event)">1</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(2, event)">2</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(3, event)">3</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(4, event)">4</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(5, event)">5</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(6, event)">6</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(7, event)">7</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(8, event)">8</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(9, event)">9</div>
+                    <div class="key-btn btn-cancel" onclick="AuraKeypad.clear(event)">CANCEL</div>
+                    <div class="key-btn" onclick="AuraKeypad.press(0, event)">0</div>
+                    <div class="key-btn btn-ok" onclick="AuraKeypad.submit(event)">ENTER</div>
+                </div>
+                <div style="color: var(--neon); font-size: 10px; margin-top: 20px; opacity: 0.5;">AURA SECURITY PROTOCOL</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="wall"></div>
+    <div class="floor"></div>
+    <div class="tech-particles" id="particles"></div>
+
+    <script>
+        const particlesContainer = document.getElementById('particles');
+        const particleCount = 40;
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            const moveX = (Math.random() - 0.5) * 300;
+            const moveY = (Math.random() - 0.5) * 300;
+            const moveZ = (Math.random() - 0.5) * 300;
+            particle.style.setProperty('--px', moveX + 'px');
+            particle.style.setProperty('--py', moveY + 'px');
+            particle.style.setProperty('--pz', moveZ + 'px');
+            particle.style.animationDelay = Math.random() * -5+ 's';
+            particlesContainer.appendChild(particle);
+        }
+    </script>
 
     <div id="splash-screen">
         <div id="intro-visual" class="atomic-system">
@@ -28,10 +92,8 @@
 
     <div id="screen-daily" class="screen active">
         <h2 id="display-month-title">Nhập chi tiêu</h2>
-        
         <div id="daily-wallets-list"></div>
-
-        <button class="btn btn-primary" onclick="endMonth()">KẾT THÚC THÁNG (RESET)</button>
+        <button class="btn btn-primary" onclick="endMonth()">KẾT THÚC KỲ (RESET)</button>
     </div>
 
     <div id="screen-budget" class="screen">
@@ -50,7 +112,7 @@
     <div id="screen-status" class="screen">
         <div id="display-area">
             <div id="visual-effect" class="effect-overlay"></div>
-            <div class="hologram-info">
+            <div class="hologram-info" style="bottom: -50px;">
                 <div style="font-size: 12px; opacity: 0.8;">TÌNH HÌNH TÀI CHÍNH</div>
                 <div id="hologram-percent" style="font-size: 24px; font-weight: bold; color: var(--neon-blue);">100%</div>
                 <div id="hologram-status-text" style="font-size: 13px;">Trạng thái</div>
@@ -66,7 +128,6 @@
     <div id="screen-alloc" class="screen">
         <h2>Cấu hình Ngân sách</h2>
         <p style="color: #666; font-size: 13px;">Quản lý các ví chi tiêu của bạn tại đây</p>
-        
         <div class="card">
             <div class="input-group" style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
                 <span style="font-weight:bold; color:var(--primary); font-size: 16px;">TỔNG NGÂN SÁCH GỐC (K)</span>
@@ -74,17 +135,15 @@
                     <input type="number" id="base-total-budget" style="font-weight:bold; color:var(--primary);" onchange="updateBaseTotal(this.value)">
                 </div>
             </div>
-
             <div class="group-title" style="display:flex; justify-content:space-between; align-items:center;">
                 <span>Danh sách Ví con:</span>
                 <button class="btn-mini btn-add" onclick="addNewWallet()">+ Thêm ví</button>
             </div>
-
             <div id="alloc-wallets-container"></div>
-
-            <div style="background: #FFF3E0; padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px;">
-                <div style="font-size: 12px; color: #E65100;">Tiết kiệm dự tính (Còn lại):</div>
-                <div id="preview-saving-calc" style="font-weight: bold; color: #E65100; font-size: 18px;">0</div>
+            
+            <div class="saving-preview-box">
+                <div class="saving-label">Tiết kiệm dự tính (Còn lại)</div>
+                <div id="preview-saving-calc" class="saving-value">0</div>
             </div>
 
             <button class="btn btn-success" onclick="saveAllocConfig()">LƯU PHÂN BỔ</button>
@@ -99,19 +158,142 @@
             <button class="btn btn-primary" onclick="updateMonthName()">Cập nhật tên</button>
         </div>
         <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-            <b>Giao diện Tối/Sáng</b>
-            <button onclick="toggleTheme()" style="padding:8px 16px; border-radius:20px; border:1px solid #ddd; background:var(--input-bg); color:var(--text);">Đổi màu</button>
-        </div>
+    <div>
+        <b style="color: var(--neon); text-shadow: 0 0 5px var(--neon);">Tài liệu vận hành</b>
+        <div style="font-size: 11px; color: var(--text-dim); margin-top: 5px; opacity: 0.7;">Xem hướng dẫn chi tiết hệ thống</div>
+    </div>
+    <button onclick="window.location.href='huongdansudung.html'" 
+            style="padding:10px 20px; border-radius:8px; border:1px solid var(--neon); background:rgba(0, 255, 136, 0.1); color:var(--neon); font-weight:bold; cursor:pointer; text-transform:uppercase;">
+        Mở HDSD
+    </button>
+</div>
     </div>
 
-    <div class="nav-container" style="justify-content: center; align-items: center; border-top: 1px solid rgba(0, 242, 255, 0.3);">
-        <button onclick="window.location.href='./hologram0.html'" 
-                style="background: none; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 10px 30px; border-radius: 20px; font-weight: bold; letter-spacing: 2px; cursor: pointer; text-shadow: 0 0 5px var(--neon-blue); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);">
-            ← QUAY LẠI SẢNH
+    <div id="bottom-nav-bar" class="nav-container" style="justify-content: center; align-items: center; border-top: 1px solid rgba(0, 242, 255, 0.1); background: none;">
+        <button onclick="window.location.href='./hologram0.html'" class="btn-hologram-back">
+            <span class="btn-shell"></span>
+            <span class="btn-core">← QUAY LẠI SẢNH</span>
         </button>
     </div>
 
     <script src="magic.js"></script>
     <script src="logic.js"></script>
+
+    <script>
+        document.addEventListener('click', function(e) {
+            
+            // Tìm Card cha
+            const card = e.target.closest('.card');
+            
+            // Loại trừ card không cần thiết
+            if (!card || card.id === 'budget-details' || card.classList.contains('history-card')) return;
+
+            // Loại trừ vùng nhập liệu
+            const ignoreList = ['INPUT', 'BUTTON', 'SELECT', 'TEXTAREA', 'LABEL'];
+            if (ignoreList.includes(e.target.tagName)) return;
+
+            // Logic Sticky Aura
+            const isActive = card.classList.contains('is-active');
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('is-active'));
+
+            if (!isActive) {
+                card.classList.add('is-active');
+            }
+        });
+
+        // =================================================================
+        // [LOGIC KHỞI ĐỘNG TUẦN TỰ: ĐEN -> BÀN PHÍM -> SPLASH -> DASHBOARD]
+        // =================================================================
+        document.addEventListener("DOMContentLoaded", function() {
+            // 1. Kiểm tra Admin (Giữ nguyên logic cũ)
+            const expiryKey = 'AURA_EXPIRY_TIMESTAMP';
+            const roleKey = 'AURA_CLEARANCE_LEVEL';
+            const expiryTime = localStorage.getItem(expiryKey);
+            const currentRole = localStorage.getItem(roleKey);
+
+            if (expiryTime && currentRole && currentRole !== 'INITIATOR-0') {
+                const now = new Date().getTime();
+                if (now > parseInt(expiryTime)) {
+                    console.warn("Hệ thống: Quyền hạn Admin đã hết hiệu lực.");
+                    localStorage.setItem(roleKey, 'INITIATOR-0');
+                    localStorage.removeItem(expiryKey);
+                }
+            }
+
+            // 2. KHỞI ĐỘNG TUẦN TỰ
+            const STORAGE_PASS = "AURA_PASS_KEY"; 
+            const savedPass = localStorage.getItem(STORAGE_PASS);
+            const lockScreen = document.getElementById('global-keypad-lock');
+            const splashScreen = document.getElementById('splash-screen');
+            const navBar = document.getElementById('bottom-nav-bar');
+
+            if (savedPass && savedPass !== "") {
+                // TRƯỜNG HỢP CÓ MẬT MÃ:
+                // Hiện bàn phím bảo mật lên trước
+                lockScreen.style.display = 'flex'; 
+                
+                // Khởi tạo Keypad
+                if (typeof AuraKeypad !== 'undefined') {
+                    AuraKeypad.init((inputCode) => {
+                        if (inputCode === savedPass) {
+                            // -> NHẬP ĐÚNG MÃ:
+                            // 1. Ẩn bàn phím
+                            lockScreen.style.display = 'none';
+                            
+                            // 2. Mở lại Body để thấy Splash Screen
+                            document.body.style.visibility = "visible";
+                            
+                            // 3. Đảm bảo Splash Screen hiện ra để người dùng bấm "Khởi chạy"
+                            if(splashScreen) splashScreen.style.display = 'flex';
+                            
+                            // 4. Hiện Nav bar (tùy chọn, vì Splash che hết rồi)
+                            if(navBar) navBar.style.display = 'flex';
+                            
+                            console.log("🔓 Access Granted! -> Chuyển sang Splash Screen");
+                        } else {
+                            AuraKeypad.showError("MÃ KHÔNG ĐÚNG"); 
+                        }
+                    });
+                }
+            } else {
+                // TRƯỜNG HỢP KHÔNG CÓ MẬT MÃ:
+                // Hiện ngay Body và Splash Screen
+                document.body.style.visibility = "visible";
+                lockScreen.style.display = 'none';
+            }
+        });
+    </script>
+    <script src="internet.js"></script>
+    <script src="aura_assistant.js"></script>
+    <script>
+        // Lắng nghe và ghi đè sự kiện chuyển tab để gọi trợ lý
+        if (typeof tab === 'function') {
+            const originalTab = tab; // Lưu lại logic chuyển tab gốc
+            tab = function(id) {
+                originalTab(id); // Chạy giao diện tab như bình thường
+                
+                // Gọi Trợ lý với ID tương ứng (vd: 'task_daily', 'task_budget'...)
+                if (typeof initAuraAssistant === 'function') {
+                    // Đợi giao diện render xong (300ms) rồi mới bung trợ lý để tạo cảm giác mượt
+                    setTimeout(() => {
+                        initAuraAssistant('task_' + id);
+                    }, 300);
+                }
+            };
+        }
+
+        // Kích hoạt ngay lần đầu tiên mở file (dựa trên tab mặc định đang mở)
+        window.addEventListener('load', () => {
+            const params = new URLSearchParams(window.location.search);
+            const targetTask = params.get('task') || 'daily';
+            
+            // Đợi Splash Screen chạy xong (tùy chỉnh thời gian nều cần)
+            setTimeout(() => {
+                if (typeof initAuraAssistant === 'function') {
+                    initAuraAssistant('task_' + targetTask);
+                }
+            }, 500);
+        });
+    </script>
 </body>
 </html>

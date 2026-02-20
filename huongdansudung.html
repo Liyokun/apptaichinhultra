@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hướng Dẫn Sử Dụng - Finance Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="design.css">
+    
+    <style>
+        /* --- 1. NÂNG CẤP GIAO DIỆN 3D AURA (GHI ĐÈ FILE GỐC) --- */
+        
+        /* Ép thẻ History Card phải có hiệu ứng 3D và Aura giống hệt thẻ Dashboard */
+        .card.history-card {
+            position: relative !important;
+            
+            /* Màu nền kính tối và viền Neon */
+            background: rgba(0, 5, 8, 0.95) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 2px solid var(--neon) !important;
+            border-radius: 12px !important;
+
+            /* Hiệu ứng Aura phát sáng mặc định */
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4), inset 0 0 15px rgba(0, 242, 255, 0.1) !important;
+
+            /* Đẩy nổi 3D lên khỏi mặt sàn */
+            transform: translateZ(20px) !important;
+            transform-style: preserve-3d !important;
+
+            /* GIÃN CÁCH CÁC TASK RỘNG RA */
+            margin-bottom: 120px !important; 
+
+            /* Các thuộc tính hỗ trợ đóng mở */
+            padding: 0 !important; 
+            overflow: hidden !important; 
+            transition: all 0.4s ease !important;
+        }
+
+        /* Hiệu ứng nhún nhẹ khi chạm vào (Tương tác vật lý) */
+        .card.history-card.is-active {
+    background: rgba(0, 10, 15, 0.9) !important; 
+
+    /* Glow neon mạnh - 3-4 lớp chồng */
+    box-shadow: 
+        0 0 10px 2px var(--neon),                /* Lớp trong: viền sáng rõ */
+        0 0 20px 5px rgba(0, 242, 255, 0.7),     /* Lớp giữa: glow lan tỏa */
+        0 0 40px 15px rgba(0, 242, 255, 0.4),    /* Lớp ngoài: aura rộng */
+        0 0 60px 25px rgba(0, 242, 255, 0.2)     /* Lớp xa: hào quang mờ dần */
+        !important;
+
+    transform: translateZ(60px) !important; 
+    border: 2px solid var(--neon) !important;    /* Giữ border gốc nhưng sáng hơn nhờ glow */
+    border-color: var(--neon) !important;
+    z-index: 100;
+}
+        .card.history-card {
+            /* --- CHỈNH SỐ TẠI ĐÂY ĐỂ THU HẸP CHIỀU NGANG --- */
+            width: 85% !important;         /* Giảm từ 85% xuống 70% hoặc số bạn muốn */
+            max-width: 400px !important;    /* Khống chế độ rộng tối đa để không bị bè */
+            margin-left: auto !important;   /* Căn giữa thẻ */
+            margin-right: auto !important;  /* Căn giữa thẻ */
+            
+            position: relative !important;
+            /* ... các dòng khác giữ nguyên ... */
+            } 
+
+        /* --- 2. TINH CHỈNH NỘI DUNG BÊN TRONG --- */
+        
+        /* Header của thẻ (Phần tiêu đề luôn hiện) */
+        .history-header {
+            background: rgba(0, 242, 255, 0.05); /* Nền mờ nhẹ */
+            padding: 50px !important; /* Tăng padding cho thoáng */
+            border-bottom: 1px solid rgba(0, 242, 255, 0.1);
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            cursor: pointer;
+        }
+        /* Nội dung chi tiết - BẢN FIX CUỐI CÙNG: KHÔNG LAG - KHÔNG CHỚP */
+        .history-details {
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--text-dim);
+            font-size: 14px;
+            line-height: 1.6;
+            text-align: justify;
+            border-top: 0px solid transparent;
+            
+            /* Dùng display: none như bản cũ để KHÔNG LAG */
+            display: none; 
+            padding: 20px !important;
+        }
+
+        /* Khi mở: Dùng Animation Keyframes để hiện dần (Chống chớp) */
+        .history-details.show {
+            display: block !important;
+            border-top: 1px solid rgba(0, 242, 255, 0.2);
+            animation: fadeInDetail 0.4s ease-out forwards; /* Hiệu ứng hiện dần nhẹ nhàng */
+        }
+
+        /* Định nghĩa hiệu ứng hiện dần */
+        @keyframes fadeInDetail {
+            from {
+                opacity: 0;
+                transform: translateY(-10px); /* Trượt nhẹ từ trên xuống 1 chút xíu */
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+        /* Icon mũi tên */
+        .arrow-icon {
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Xoay nảy nảy cho vui mắt */
+            font-size: 14px;
+            text-shadow: 0 0 5px var(--neon);
+        }
+        
+        /* Tiêu đề trang */
+        h1.page-title {
+            text-align: center;
+            color: var(--neon);
+            text-shadow: 0 0 20px var(--neon);
+            margin-bottom: 60px; /* Đẩy tiêu đề cách xa task đầu tiên */
+            font-size: 26px;
+            letter-spacing: 2px;
+            font-weight: 900;
+            border-bottom: 2px solid rgba(0, 242, 255, 0.3);
+            padding-bottom: 30px;
+            display: inline-block;
+            width: 100%;
+        }
+        /* 1. Ẩn tất cả các thẻ trước */
+.card.history-card {
+    display: none !important;
+}
+
+/* 2. Chỉ hiện từ thẻ số 1 đến thẻ số 3 */
+/* Thay số 3 bằng số lượng thẻ bạn muốn mở */
+.card.history-card:nth-of-type(-n+1) {
+    display: block !important;
+}
+/* Hiệu ứng KÍCH HOẠT: Chỉ hào quang bên ngoài, không đổi nền, không chớp */
+.card.history-card.is-active {
+    /* Giữ nguyên màu nền gốc 0.9 để lớp kính không bị vẽ lại gây chớp */
+    background: rgba(0, 10, 15, 0.9) !important; 
+    
+    /* Chỉ phát sáng quầng bên ngoài (Outer Glow), bỏ hoàn toàn inset shadow */
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.5) !important;
+    
+    /* Đẩy nổi 3D cao lên nhưng giữ scale 1 để chữ không bị nhòe */
+    transform: translateZ(60px) !important; 
+    
+    border-color: var(--neon) !important;
+    z-index: 100;
+}
+
+    </style>
+</head>
+<body data-theme="light">
+
+    <div class="wall"></div>
+    <div class="floor"></div>
+    <div class="tech-particles" id="particles"></div>
+
+    <script>
+        const particlesContainer = document.getElementById('particles');
+        const particleCount = 40;
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            const moveX = (Math.random() - 0.5) * 300;
+            const moveY = (Math.random() - 0.5) * 300;
+            const moveZ = (Math.random() - 0.5) * 300;
+            particle.style.setProperty('--px', moveX + 'px');
+            particle.style.setProperty('--py', moveY + 'px');
+            particle.style.setProperty('--pz', moveZ + 'px');
+            particle.style.animationDelay = (Math.random() * -12) + 's';
+            particlesContainer.appendChild(particle);
+        }
+    </script>
+
+    <div class="screen active" style="display: block; padding-top: 30px; padding-bottom: 150px;">
+        
+        <h1 class="page-title">HƯỚNG DẪN VẬN HÀNH</h1>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    HIỆN TẠI CHƯA CÓ GÌ HẾT NHA! 
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Thật là cố chấp 🐡 đã nói là không có gì mà, tự mò đi 🐙
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    2. NHẬP LIỆU HÀNG NGÀY
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Tại màn hình chính, nhập số tiền vào ô tương ứng với ví (VD: nhập 50 vào ví Ăn uống). Bấm <b>Lưu</b> để ghi nhận. Hệ thống tự động trừ tiền và cập nhật số dư.
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    3. HOÀN TÁC LỆNH NHẬP
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Nếu lỡ nhập sai, hãy bấm ngay nút <b>Xóa</b> (Undo) bên cạnh nút Lưu. Hệ thống sẽ hoàn lại số tiền của lệnh nhập gần nhất cho ví đó.
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    4. XEM AI SOI VÍ (STATUS)
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Mục Status hiển thị Hologram đánh giá sức khỏe tài chính. Màu sắc và hiệu ứng (Tuyết, Mưa, Nắng...) thay đổi dựa trên % ngân sách còn lại của bạn.
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    5. THEO DÕI DÒNG TIỀN
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Mục Dòng tiền (Budget) cho biết bạn đang "Dương" hay "Âm" ở từng ví cụ thể. Màu đỏ báo hiệu đã tiêu lố tay, màu xanh là còn an toàn.
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    6. KẾT THÚC THÁNG (RESET)
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Nút này nằm ở cuối trang Nhập liệu. Khi bấm vào, toàn bộ dữ liệu chi tiêu và phân bổ sẽ về 0 để bắt đầu tháng mới. Dữ liệu cũ được lưu vào Lịch sử.
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    7. XEM LẠI LỊCH SỬ
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Mục Lịch sử lưu trữ các tháng đã chốt sổ. Bạn có thể bấm vào từng tháng để xem chi tiết đã tiêu gì, hoặc xóa bản ghi nếu không cần thiết.
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    8. ĐỔI TÊN THÁNG
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Vào Cài đặt, nhập tên tháng (VD: "Tháng 2 - Tết") và bấm Cập nhật. Tên này sẽ xuất hiện trên Dashboard và trong bản ghi Lịch sử khi bạn chốt sổ.
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    9. CHẾ ĐỘ MÀN HÌNH (THEME)
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Hiện tại hệ thống tối ưu nhất cho giao diện Neon Dark Mode. Chế độ sáng (Light Mode) có thể được kích hoạt trong cài đặt nhưng không khuyến khích vì giảm trải nghiệm Aura.
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    10. XÓA VÍ
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Trong mục Phân bổ, bấm nút "XÓA VÍ" góc phải để loại bỏ một mục chi tiêu. Lưu ý: Toàn bộ lịch sử nhập liệu của ví đó trong tháng sẽ mất.
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    11. Ý NGHĨA CON SỐ DỰ TÍNH
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Ô "Tiết kiệm dự tính" = Tổng ngân sách gốc - Tổng tiền phân bổ cho các ví. Đây là số tiền bạn "để dành" ngay từ đầu tháng, không dùng để chi tiêu.
+            </div>
+        </div>
+
+        <div class="card history-card">
+            <div class="history-header" onclick="toggleTask(this)">
+                <div style="font-weight:bold; font-size:16px; color:var(--neon);">
+                    12. LƯU Ý QUAN TRỌNG
+                </div>
+                <div class="arrow-icon" style="color:var(--neon)">▼</div>
+            </div>
+            <div class="history-details">
+                Dữ liệu được lưu trên trình duyệt (Local Storage). Nếu bạn xóa cache trình duyệt hoặc dùng tab Ẩn danh, dữ liệu sẽ bị mất. Hãy backup nếu cần thiết.
+            </div>
+        </div>
+
+    </div>
+
+    <div class="nav-container" style="justify-content: center; align-items: center; border-top: 1px solid rgba(0, 242, 255, 0.1); background: none;">
+        <button onclick="window.location.href='index.html?task=settings'" class="btn-hologram-back">
+    <span class="btn-core">← QUAY LẠI CÀI ĐẶT</span>
+</button>
+    </div>
+        <script>
+        function toggleTask(headerElement) {
+            // Ngăn chặn sự kiện lan truyền để tránh xung đột
+            if (window.event) window.event.stopPropagation();
+            
+            const card = headerElement.parentElement;
+            const details = headerElement.nextElementSibling;
+            const arrow = headerElement.querySelector('.arrow-icon');
+            
+            // Kiểm tra xem cái mình vừa bấm có đang mở không
+            const isCurrentlyOpen = details.classList.contains('show');
+
+            // BƯỚC 1: ĐÓNG HẾT TẤT CẢ CÁC THẺ KHÁC (Reset về trạng thái tĩnh)
+            document.querySelectorAll('.history-details').forEach(d => {
+                d.classList.remove('show'); // Ẩn nội dung ngay lập tức (Display: none)
+            });
+            document.querySelectorAll('.card').forEach(c => {
+                c.classList.remove('is-active'); // Tắt Aura
+            });
+            document.querySelectorAll('.arrow-icon').forEach(a => {
+                a.style.transform = "rotate(0deg)";
+                a.style.color = "var(--neon)";
+            });
+
+            // BƯỚC 2: NẾU THẺ VỪA BẤM ĐANG ĐÓNG -> THÌ MỞ NÓ RA
+            if (!isCurrentlyOpen) {
+                // Display: block sẽ kích hoạt ngay, Animation CSS sẽ làm nó hiện từ từ -> Không chớp
+                details.classList.add('show');
+                
+                // Bật Aura
+                card.classList.add('is-active');
+                
+                // Xoay mũi tên
+                arrow.style.transform = "rotate(180deg)";
+                arrow.style.color = "var(--neon-green)";
+            }
+        }
+
+        // Xử lý khi bấm ra ngoài vùng trống
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.card')) {
+                // Đóng tất cả
+                document.querySelectorAll('.history-details').forEach(d => d.classList.remove('show'));
+                document.querySelectorAll('.card').forEach(c => c.classList.remove('is-active'));
+                document.querySelectorAll('.arrow-icon').forEach(a => {
+                    a.style.transform = "rotate(0deg)";
+                    a.style.color = "var(--neon)";
+                });
+            }
+        });
+    </script>
+</body>
+</html>

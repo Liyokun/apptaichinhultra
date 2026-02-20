@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ĐỐI SOÁT NGÂN SÁCH</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --neon: #00f2ff; --danger: #ff073a; --safe: #39ff14; }
+        
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            background-color: #000; /* Nền đen gốc */
+            font-family: 'Segoe UI', sans-serif; color: #fff; 
+            overflow: hidden; user-select: none;
+            position: relative; /* Để định vị lớp nền */
+        }
+
+        /* --- CẤU HÌNH BACKGROUND RIÊNG (ĐỘ MỜ 10%) --- */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: url('./bieudo1.jpg') center center / cover no-repeat;
+            opacity: 0.7; /* Độ mờ 10% đúng yêu cầu */
+            z-index: 0;   /* Nằm dưới cùng nhưng trên nền đen */
+            pointer-events: none;
+        }
+
+        /* Chỉ giữ lại layer bụi, bỏ layer nổ */
+        #dust-container { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+
+        /* Header */
+        .header {
+            position: absolute; top: 30px; width: 100%; text-align: center; z-index: 20;
+        }
+        .header h1 {
+            margin: 0; font-size: 20px; letter-spacing: 4px; color: var(--neon);
+            text-shadow: 0 0 15px var(--neon); text-transform: uppercase;
+            font-weight: 300; border-bottom: 1px solid rgba(0, 242, 255, 0.3);
+            display: inline-block; padding: 10px 40px;
+            background: rgba(0, 5, 10, 0.8); backdrop-filter: blur(4px);
+        }
+
+        /* Container Biểu đồ */
+        .chart-container {
+            position: relative;
+            width: 95vw; height: 60vh; 
+            margin: 100px auto 0 auto;
+            z-index: 10;
+            display: flex; justify-content: center; align-items: center;
+            padding: 10px; box-sizing: border-box;
+        }
+
+        /* Thông báo trạng thái */
+        .status-bar {
+            text-align: center; margin-top: 10px; z-index: 10; position: relative;
+            font-size: 13px; letter-spacing: 1px; color: #888;
+        }
+        .status-highlight { color: var(--danger); font-weight: bold; text-shadow: 0 0 5px var(--danger); }
+
+        /* Nút Back tròn */
+        .back-circle {
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 55px; height: 55px; border: 1.5px solid var(--neon); border-radius: 50%;
+            background: rgba(0,5,10,0.8); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 100; box-shadow: 0 0 15px rgba(0,242,255,0.2);
+            transition: 0.3s;
+        }
+        .back-circle:active { transform: translateX(-50%) scale(0.9); background: var(--neon); }
+        .back-circle:active svg { stroke: #000; }
+
+        /* Bụi */
+        .dust {
+            position: absolute; background: var(--neon); border-radius: 50%;
+            box-shadow: 0 0 6px var(--neon); opacity: 0.6; animation: float linear infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(110vh) scale(0.3); opacity: 0; }
+            100% { transform: translateY(-20vh) scale(1); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="dust-container"></div>
+
+    <div class="header"><h1>ĐỐI SOÁT NGÂN SÁCH</h1></div>
+
+    <div class="chart-container">
+        <canvas id="budgetChart"></canvas>
+    </div>
+
+    <div class="status-bar" id="status-message">
+        ĐANG PHÂN TÍCH DỮ LIỆU...
+    </div>
+
+    <div class="back-circle" onclick="window.location.href='./bieudo.html'">
+        <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--neon)" stroke-width="2" fill="none"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </div>
+
+    <script>
+        // --- 1. XỬ LÝ DỮ LIỆU (LOGIC.JS) ---
+        function loadDataAndDraw() {
+            const rawData = localStorage.getItem('app_data_v4');
+            const appData = rawData ? JSON.parse(rawData) : { wallets: [] };
+
+            const wallets = appData.wallets.filter(w => w.alloc > 0 || w.spent > 0);
+
+            if (wallets.length === 0) {
+                document.getElementById('status-message').innerText = "CHƯA CÓ DỮ LIỆU ĐỂ SO SÁNH";
+                return;
+            }
+
+            const labels = wallets.map(w => w.name);
+            const allocData = wallets.map(w => w.alloc);
+            const spentData = wallets.map(w => w.spent);
+
+            const spentColors = wallets.map(w => {
+                return (w.spent > w.alloc) ? '#ff073a' : '#39ff14';
+            });
+
+            const overBudgetCount = wallets.filter(w => w.spent > w.alloc).length;
+            const statusEl = document.getElementById('status-message');
+            if (overBudgetCount > 0) {
+                statusEl.innerHTML = `CẢNH BÁO: CÓ <span class="status-highlight">${overBudgetCount} VÍ</span> ĐANG VƯỢT NGÂN SÁCH!`;
+            } else {
+                statusEl.innerHTML = "TÌNH HÌNH TÀI CHÍNH ỔN ĐỊNH";
+                statusEl.style.color = "#39ff14";
+            }
+
+            drawBarChart(labels, allocData, spentData, spentColors);
+        }
+
+        // --- 2. VẼ BIỂU ĐỒ CỘT KÉP ---
+        function drawBarChart(labels, alloc, spent, spentColors) {
+            const ctx = document.getElementById('budgetChart').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'NGÂN SÁCH',
+                            data: alloc,
+                            backgroundColor: 'transparent',
+                            borderColor: '#00f2ff',
+                            borderWidth: 2,
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8
+                        },
+                        {
+                            label: 'THỰC TẾ',
+                            data: spent,
+                            backgroundColor: 'transparent',
+                            borderColor: spentColors,
+                            borderWidth: 2,
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.8,
+                            hoverBackgroundColor: spentColors.map(c => c + '33')
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#333' },
+                            ticks: { color: '#fff', font: { family: 'Segoe UI' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#fff', font: { family: 'Segoe UI' } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#fff', font: { size: 11 } }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0,0,0,0.9)',
+                            titleColor: '#00f2ff',
+                            bodyColor: '#fff',
+                            borderColor: '#333',
+                            borderWidth: 1
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutQuart'
+                    }
+                    // Đã gỡ bỏ sự kiện onClick gây nổ
+                }
+            });
+        }
+
+        // --- 3. CHỈ CÒN HIỆU ỨNG BỤI (Dust Only) ---
+        function createDust() {
+            const c = document.getElementById('dust-container');
+            for(let i=0; i<50; i++) {
+                const d = document.createElement('div'); d.className='dust';
+                d.style.left=Math.random()*100+'vw'; d.style.width=d.style.height=(Math.random()*3+1)+'px';
+                d.style.animationDuration=(Math.random()*10+5)+'s'; d.style.animationDelay='-'+Math.random()*10+'s';
+                c.appendChild(d);
+            }
+        }
+        createDust();
+
+        window.onload = loadDataAndDraw;
+
+    </script>
+</body>
+</html>

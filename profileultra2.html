@@ -43,7 +43,7 @@
             position: fixed;
             top: 15%; 
             left: 50%; transform: translateX(-50%);
-            width: 70%; max-width: 250px; 
+            width: 55%; max-width: 250px; 
             min-height: 60px;
             display: block; 
             text-align: center;
@@ -62,7 +62,7 @@
 
         /* --- 3. ROBOT TRIGGER --- */
         .robot-test-container {
-            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
             width: 220px; cursor: pointer; z-index: 1000; transition: 0.3s;
         }
         .robot-test-container:active { transform: translateX(-50%) scale(0.95); }
@@ -120,7 +120,8 @@
 
         /* --- 6. POPUP EDIT --- */
         #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); z-index: 10000; justify-content: center; align-items: center; flex-direction: column; }
-        .modal-box { width: 300px; padding: 25px; background: var(--glass); border: 1px solid var(--neon); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 242, 255, 0.2); text-align: center; animation: popIn 0.3s forwards; }
+        /* ĐÃ SỬA LỖI ANIMATION CHỖ NÀY: Dùng modalPopIn thay cho popIn */
+        .modal-box { width: 300px; padding: 25px; background: var(--glass); border: 1px solid var(--neon); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 242, 255, 0.2); text-align: center; animation: modalPopIn 0.3s forwards; }
         .modal-title { color: var(--neon); font-size: 14px; letter-spacing: 2px; margin-bottom: 15px; border-bottom: 1px dashed rgba(0, 242, 255, 0.3); padding-bottom: 10px; }
         .neon-input { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(0, 242, 255, 0.3); color: #fff; padding: 10px; border-radius: 5px; outline: none; resize: none; height: 80px; text-align: center; font-family: inherit; }
         .neon-input:focus { border-color: var(--neon); box-shadow: 0 0 10px rgba(0, 242, 255, 0.3); }
@@ -138,6 +139,11 @@
         @keyframes popIn { 
             from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } 
             to { opacity: 1; transform: translate(-50%, -50%) scale(1); } 
+        }
+        /* THÊM ANIMATION MỚI DÀNH RIÊNG CHO POPUP LỜI CHÀO */
+        @keyframes modalPopIn { 
+            from { opacity: 0; transform: scale(0.8); } 
+            to { opacity: 1; transform: scale(1); } 
         }
     </style>
 </head>
@@ -177,11 +183,11 @@
     <div id="chat-overlay" onclick="/* Chặn click */"></div>
     <div id="chat-panel">
         <div class="close-arrow" onclick="closeChat()">&#8592;</div>
-        <div class="chat-header">AURA CORE (GEMINI)</div>
+        <div class="chat-header">LIOKUN CORE</div>
         <div id="chat-content">
             <div class="chat-row">
                 <div class="avatar"><img src="./robot.png"></div>
-                <div class="bubble bot">Kết nối Gemini AI... Sẵn sàng.</div>
+                <div class="bubble bot">Xin chào trợ lý tài chính sẵn sàng hỗ trợ bạn</div>
             </div>
         </div>
         <div class="chat-input-area">
@@ -299,81 +305,62 @@
 
         // --- HÀM CHAT TEST GEMINI ---
         async function sendChatMessage() {
-            const input = document.getElementById('user-chat-input');
-            const text = input.value.trim();
-            if(!text) return;
+    const input = document.getElementById('user-chat-input');
+    const text = input.value.trim();
+    if(!text) return;
 
-            if(currentEnergy <= 0) {
-                addMsg("CẢNH BÁO: Hết năng lượng.", 'bot');
-                return;
-            }
+    if(currentEnergy <= 0) {
+        addMsg("CẢNH BÁO: Hết năng lượng.", 'bot');
+        return;
+    }
 
-            addMsg(text, 'user');
-            input.value = '';
+    addMsg(text, 'user');
+    input.value = '';
+    
+    // 1. Lấy dữ liệu từ localStorage để gửi kèm (chỉ khi cần)
+    const appData = JSON.parse(localStorage.getItem('app_data_v4'));
+    const mName = localStorage.getItem('mName_v3');
+
+    // 2. Tạo bubble trống cho Bot trước để đổ chữ vào
+    const botMsgId = 'bot-' + Date.now();
+    addMsg("", 'bot', botMsgId);
+    const botBubble = document.getElementById(botMsgId);
+
+    try {
+        const response = await fetch('/api/gemini1-5flash', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                prompt: text,
+                appData: appData, // Gửi dữ liệu app sang để API tự lọc
+                mName: mName
+            })
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
             
-            const loadingId = 'loading-' + Date.now();
-            addMsg("...", 'bot', loadingId);
-
-            // [TEST] Chỉ gửi câu hỏi đơn giản để test kết nối, không gửi context ví
-            // Vì mục đích là xem file trung gian có chạy không.
-            const promptToSend = text;
-
-            try {
-                // [UPDATE] Gọi API Gemini thay vì Groq
-                const response = await fetch('/api/gemini1-5flash', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: promptToSend })
-                });
-
-                const data = await response.json();
-const loadingEl = document.getElementById(loadingId);
-if(loadingEl) loadingEl.parentElement.remove();
-
-// Kiểm tra cả cấu trúc cũ lẫn cấu trúc mới cho chắc ăn
-let aiText = "";
-if (data.text) {
-    aiText = data.text; // Cấu trúc rút gọn tôi vừa làm cho bạn
-} else if (data.candidates && data.candidates[0]) {
-    aiText = data.candidates[0].content.parts[0].text; // Cấu trúc mặc định của Google
-}
-
-if (aiText) {
-    addMsg(aiText, 'bot');
-    deductEnergy();
-} else {
-    // Nếu vẫn lỗi, nó sẽ hiện lỗi chi tiết từ Google mà tôi đã cài vào file .js
-    const errorMsg = data.error_detail || "Gemini trả về dữ liệu không xác định";
-    addMsg("⚠️ BÁO LỖI: " + errorMsg, 'bot');
-}
-
-
-            } catch (error) {
-                const loadingEl = document.getElementById(loadingId);
-                if(loadingEl) loadingEl.parentElement.remove();
-                addMsg("LỖI KẾT NỐI: " + error.message, 'bot');
-            }
+            // Hiệu ứng trả về từng chữ: Cộng dồn text vào bubble
+            botBubble.innerText += chunk;
+            
+            // Cuộn xuống theo chữ
+            const chatContent = document.getElementById('chat-content');
+            chatContent.scrollTop = chatContent.scrollHeight;
         }
 
-        function addMsg(text, type, id = null) {
-            const box = document.getElementById('chat-content');
-            const row = document.createElement('div');
-            row.className = `chat-row ${type}`;
-            if(type === 'bot') {
-                const ava = document.createElement('div');
-                ava.className = 'avatar';
-                ava.innerHTML = `<img src="./robot.png">`;
-                row.appendChild(ava);
-            }
-            const bubble = document.createElement('div');
-            bubble.className = `bubble ${type}`;
-            if(id) bubble.id = id;
-            bubble.innerText = text;
-            
-            row.appendChild(bubble);
-            box.appendChild(row);
-            box.scrollTop = box.scrollHeight;
-        }
+        deductEnergy();
+
+    } catch (error) {
+        botBubble.innerText = "LỖI KẾT NỐI: " + error.message;
+    }
+}
+
     </script>
 </body>
 </html>

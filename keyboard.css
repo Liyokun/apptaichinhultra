@@ -1,0 +1,245 @@
+/* --- AURA HOLOGRAM HUD STYLES (FIXED VERSION) --- */
+
+/* 0. CANVAS HIỆU ỨNG HẠT (QUAN TRỌNG ĐỂ NỔ HẠT) */
+#shard-canvas {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 9999;
+}
+
+/* 1. CẤU HÌNH CƠ BẢN */
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #000000;
+    background-image: radial-gradient(circle at 50% 50%, #001f3f, #000a14 70%);
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* 2. KHUNG NGOÀI (TECH FRAME CONTAINER) */
+.tech-frame-container {
+    position: relative;
+    width: 350px;
+    height: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.neon-frame {
+    position: absolute;
+    top: 0;
+    left: 5%;
+    width: 90%;
+    height: 100%;
+    border: 4px solid #00f2ff;
+    box-shadow: 0 0 20px #00f2ff, 0 0 40px #00f2ff, inset 0 0 10px #00f2ff;
+    border-radius: 10px;
+    pointer-events: none;
+    box-sizing: border-box;
+    z-index: 2;
+}
+
+/* Chi tiết trang trí khung */
+.neon-frame::before, .neon-frame::after {
+    content: '';
+    position: absolute;
+    background-color: #00f2ff;
+    box-shadow: 0 0 15px #00f2ff;
+}
+.neon-frame::before { top: -4px; left: 50%; width: 100px; height: 15px; transform: translateX(-50%); border-radius: 5px; }
+.neon-frame::after { bottom: -4px; left: 50%; width: 100px; height: 20px; transform: translateX(-50%); border-radius: 5px; }
+
+/* 3. CHI TIẾT CÔNG NGHỆ 2 BÊN (TECH DETAILS) */
+.tech-details-left, .tech-details-right {
+    position: absolute;
+    top: 50%; width: 20px; height: 150px;
+    transform: translateY(-50%); display: flex; flex-direction: column; justify-content: space-between;
+}
+.tech-details-left { left: -20px; }
+.tech-details-right { right: -20px; }
+
+.tech-bar-left, .tech-bar-right { width: 100%; height: 40%; background-color: #00f2ff; box-shadow: 0 0 10px #00f2ff; }
+.tech-bar-left { border-radius: 0 5px 5px 0; }
+.tech-bar-right { border-radius: 5px 0 0 5px; }
+
+.tech-lines-left, .tech-lines-right { width: 100%; height: 40%; display: flex; flex-direction: column; justify-content: space-around; }
+.tech-lines-left { align-items: flex-end; }
+.tech-lines-right { align-items: flex-start; }
+.line { width: 80%; height: 2px; background-color: #00f2ff; box-shadow: 0 0 5px #00f2ff; }
+
+/* 4. THẺ TRONG SUỐT (TRANSPARENT CARD) */
+.transparent-card {
+    width: 80%;
+    height: 90%;
+    margin-top: 25px;
+    border: 2px solid rgba(0, 242, 255, 0.6);
+    border-radius: 8px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(0, 242, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    position: relative; 
+    overflow: hidden; 
+}
+
+@keyframes float-safe {
+    0%, 100% { margin-top: 35px; }
+    50% { margin-top: 30px; }
+}
+.transparent-card {
+animation: float-safe 5s ease-in-out infinite;
+}
+/* TẠO LƯỚI ĐIỂM ẢNH (PIXEL GRID) */
+.transparent-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: 
+        linear-gradient(rgba(0, 242, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 242, 255, 0.1) 1px, transparent 1px);
+    background-size: 4px 4px;
+    z-index: 0; 
+    pointer-events: none;
+}
+
+/* Đảm bảo nội dung nổi lên trên lưới */
+.auth-text, .input-display, .keypad-grid, .back-btn, .neon-display, .glass-btn, .key-btn {
+    position: relative;
+    z-index: 2;
+}
+
+/* 5. VĂN BẢN VÀ MÀN HÌNH HIỂN THỊ */
+.auth-text {
+    color: #00f2ff;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 8px #00f2ff;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Màn hình hiển thị số */
+.input-display, .neon-display {
+    width: 100%;
+    height: 50px;
+    border: 1px solid #00f2ff;
+    background: rgba(0, 20, 40, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 15px;
+    box-sizing: border-box;
+    color: #00f2ff;
+    font-size: 1.5rem;
+    font-family: 'Courier New', Courier, monospace;
+    text-shadow: 0 0 5px #fff;
+    box-shadow: inset 0 0 10px rgba(0, 242, 255, 0.2);
+    transition: all 0.3s ease; /* Thêm transition để chuyển màu mượt */
+}
+.input-display::after, .neon-display::after {
+    content: ''; 
+    border-right: 2px solid #fff;
+    height: 20px;
+    margin-left: 5px;
+    animation: blink 1s infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* --- [MỚI] HIỆU ỨNG BÁO LỖI MÀU ĐỎ --- */
+.display-error {
+    border-color: #ff3333 !important;
+    color: #ff3333 !important;
+    text-shadow: 0 0 15px #ff3333;
+    background: rgba(255, 51, 51, 0.15) !important;
+    animation: shake 0.4s ease-in-out;
+}
+/* Animation rung lắc khi sai */
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+
+/* 6. BÀN PHÍM SỐ */
+.keypad-grid, .neon-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    width: 100%;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+/* NÚT BẤM (ĐÃ SỬA LỖI ĐỂ CÓ HIỆU ỨNG KÍNH) */
+.key-btn, .glass-btn {
+    /* Giảm độ đậm nền để thấy lưới mờ bên dưới */
+    background: rgba(0, 30, 45, 0.4); 
+    
+    border: 1px solid rgba(0, 242, 255, 0.5);
+    
+    /* Hiệu ứng làm mờ lưới phía sau (Glassmorphism) */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* Sửa lỗi thiếu dấu gạch ngang */
+    
+    color: #00f2ff;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+    
+    /* Sửa lỗi cú pháp box-shadow */
+    box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.1), 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.key-btn:hover, .glass-btn:hover {
+    background: rgba(0, 242, 255, 0.3);
+    box-shadow: 0 0 15px #00f2ff;
+    text-shadow: 0 0 10px #00f2ff;
+    border-color: #00f2ff;
+    color: #00f2ff;
+}
+
+/* Nút Cancel và OK */
+.btn-cancel { font-size: 0.8rem; letter-spacing: 1px; color: #00f2ff; border-color: #00f2ff; }
+.btn-cancel:hover { background: rgba(255, 51, 102, 0.3); box-shadow: 0 0 15px #ff3366; color: #ff3366; border-color: #ff3366; }
+
+.btn-ok { font-size: 0.8rem; letter-spacing: 1px; font-weight: bold; color: #00f2ff; border-color: #00f2ff; }
+.btn-ok:hover { background: rgba(0, 255, 136, 0.3); box-shadow: 0 0 15px #00ff88; color: #00ff88; border-color: #00ff88;}
+
+/* 7. NÚT BACK DƯỚI CÙNG */
+.back-btn {
+    width: 100%;
+    height: 45px;
+    margin-top: 10px; 
+    border: 1px solid #00f2ff;
+    background: rgba(0, 10, 20, 0.9);
+    color: #00f2ff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: 0.3s;
+    clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+    box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+    text-decoration: none; 
+}
+
+.back-btn:hover {
+    background: #00f2ff;
+    color: #000;
+    box-shadow: 0 0 20px #00f2ff;
+}

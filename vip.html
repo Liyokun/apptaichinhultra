@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>AURA SYSTEM - CLEARANCE REVIEW</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="design.css">
+    
+    <style>
+        /* --- 1. TÙY BIẾN GIAO DIỆN REVIEW --- */
+        
+        body {
+            background-color: #000 !important;
+            overflow-x: hidden;
+            /* Thêm perspective để hỗ trợ 3D */
+            perspective: 1500px;
+        }
+
+        h1.review-title {
+            text-align: center;
+            color: var(--neon);
+            text-shadow: 0 0 15px var(--neon);
+            margin-top: 30px;
+            margin-bottom: 20px; /* Giảm margin một chút cho gọn */
+            font-size: 24px;
+            letter-spacing: 3px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        /* --- 2. THANH CHUYỂN TAB (CƠ CHẾ PHÂN TRANG) --- */
+        .tab-wrapper {
+            /* Bao bọc vùng tab để xử lý ẩn hiện */
+            width: 100%;
+            height: 50px; /* Cố định chiều cao tránh nhảy layout */
+            margin-bottom: 30px;
+        }
+
+        .tab-page {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 0 20px;
+            transition: opacity 0.3s ease;
+        }
+
+        .tab-page.hidden {
+            display: none;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            color: rgba(0, 242, 255, 0.5);
+            padding: 10px 5px;
+            border-radius: 4px;
+            font-size: 11px; /* Giảm nhẹ size chữ để vừa vặn */
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            flex: 1; 
+            text-align: center;
+            white-space: nowrap; /* Chống xuống dòng */
+        }
+
+        /* Nút Mũi tên điều hướng */
+        .nav-arrow {
+            font-size: 18px;
+            color: var(--neon);
+            border-color: var(--neon);
+            max-width: 50px; /* Thu nhỏ nút mũi tên */
+        }
+        .nav-arrow:hover {
+            background: rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 10px var(--neon);
+        }
+
+        /* Hiệu ứng khi Active */
+        .tab-btn.active {
+            border-color: var(--neon);
+            color: #000;
+            background: var(--neon);
+            box-shadow: 0 0 15px var(--neon);
+        }
+
+        /* --- 3. KHUNG HIỂN THỊ NỘI DUNG (CONTENT BOX) --- */
+        .content-display-area {
+            position: relative;
+            width: 85%;
+            max-width: 400px;
+            margin: 0 auto;
+            height: 380px; 
+            transform-style: preserve-3d;
+        }
+
+        .level-card {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            
+            background: rgba(0, 10, 20, 0.9);
+            border: 2px solid var(--neon);
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px rgba(0, 242, 255, 0.1);
+            backdrop-filter: blur(10px);
+            
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            
+            opacity: 0;
+            transform: rotateY(90deg) translateZ(0); 
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+
+        .level-card.show {
+            opacity: 1;
+            transform: rotateY(0deg) translateZ(50px); /* Nổi 3D */
+            pointer-events: all;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.2), inset 0 0 20px rgba(0, 242, 255, 0.1);
+        }
+
+        .rank-badge {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--neon);
+            text-shadow: 0 0 10px var(--neon);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+/* Chỉnh riêng tiêu đề cho thẻ số 1 */
+#card-1 .rank-badge {
+    color: #ffffff; /* Màu trắng thuần */
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); /* Đổ bóng nhẹ cho đỡ chói */
+}
+
+        /* --- CẬP NHẬT: Ô TRỐNG CÓ THANH CUỘN --- */
+        .empty-slot {
+            width: 85%;
+            height: 180px; /* Giới hạn chiều cao */
+            border: 1px dashed rgba(0, 242, 255, 0.3);
+            
+            /* Cấu hình Flex và Scroll */
+            display: block; /* Đổi sang block để text dài tự xuống dòng */
+            overflow-y: auto; /* Cho phép cuộn dọc */
+            
+            color: rgba(0, 242, 255, 0.6);
+            font-size: 13px;
+            line-height: 1.5;
+            text-align: left; /* Căn đều cho đẹp */
+            padding: 15px;
+        }
+
+        /* Tùy biến thanh cuộn (Scrollbar) phong cách Neon */
+        .empty-slot::-webkit-scrollbar {
+            width: 5px;
+        }
+        .empty-slot::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.5); 
+        }
+        .empty-slot::-webkit-scrollbar-thumb {
+            background: var(--neon); 
+            border-radius: 10px;
+        }
+
+        /* --- 4. BOTTOM NAV --- */
+        .action-dock {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 400px;
+            display: flex;
+            gap: 70px;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid;
+            background: rgba(0, 0, 0, 0.9);
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: 0.3s;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        .btn-cancel {
+            color: #ff3333;
+            border-color: #ff3333;
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.2);
+        }
+        .btn-cancel:hover { background: #ff3333; color: black; box-shadow: 0 0 20px #ff3333; }
+
+        .btn-upgrade {
+            color: #ffd700;
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+        }
+        .btn-upgrade:hover { background: #ffd700; color: black; box-shadow: 0 0 20px #ffd700; }
+
+    </style>
+</head>
+<body>
+
+    <div class="wall"></div>
+    <div class="floor"></div>
+    <div class="tech-particles" id="particles"></div>
+
+    <h1 class="review-title">SYSTEM CLEARANCE</h1>
+
+    <div class="tab-wrapper">
+        
+        <div class="tab-page" id="page-1">
+            <button class="tab-btn active" onclick="switchRank(1)">INITIATOR</button>
+            <button class="tab-btn" onclick="switchRank(2)">OPERATOR</button>
+            <button class="tab-btn nav-arrow" onclick="togglePage(2)">→</button>
+        </div>
+
+        <div class="tab-page hidden" id="page-2">
+            <button class="tab-btn nav-arrow" onclick="togglePage(1)">←</button>
+            <button class="tab-btn" onclick="switchRank(3)">ARCHITECT</button>
+            <button class="tab-btn" onclick="switchRank(4)">ORCHESTRATOR</button>
+        </div>
+
+    </div>
+
+    <div class="content-display-area">
+        
+        <div class="level-card show" id="card-1">
+            <div class="rank-badge">[ INITIATOR ]</div>
+            <div class="empty-slot">
+                QUYỀN QUẢN TRỊ CƠ BẢN: <br>
+                › Truy cập và phân bổ ngân sách. <br>
+                › Lưu trữ và ghi chú nguồn chi. <br>
+                › Quan sát biến động số dư. <br>
+                › Theo dõi cảnh báo tài chính. <br>
+                › Lưu trữ lịch sử chi tiêu. <br>
+                › Hệ thống bảo mật. <br>
+                › Profile cá nhân hóa.        
+            </div>
+        </div>
+
+        <div class="level-card" id="card-2">
+            <div class="rank-badge" style="color: #00f3ff;">[ OPERATOR ]</div>
+            <div class="empty-slot">
+                QUYỀN QUẢN TRỊ TRUNG CẤP: <br>
+                › Tất cả tính năng của quyền quản trị cơ bản. <br>
+                › Background sảnh tự chọn. <br>
+                › Bộ sưu tập background - operator. <br>
+                › Biểu đồ phân tích chi tiêu tài chính. <br>
+                › Cài đặt và theo dõi ước nguyện. 
+            </div>
+        </div>
+
+        <div class="level-card" id="card-3">
+            <div class="rank-badge" style="color: #ffd700; text-shadow: 0 0 15px #ffd700;">[ ARCHITECT ]</div>
+            <div class="empty-slot">
+                QUYỀN QUẢN TRỊ CAO CẤP: <br>
+                › Tất cả tính năng của quyền quản trị trung cấp. <br>
+                › Bộ sưu tập background - architect. <br>
+                › Phân tích tình hình tài chính với AI. <br>
+                › Kết toán dòng tiền tự động. 
+            </div>
+        </div>
+
+        <div class="level-card" id="card-4">
+            <div class="rank-badge" style="color: #ff00ff; text-shadow: 0 0 15px #ff00ff;">[ ORCHESTRATOR ]</div>
+            <div class="empty-slot">
+                QUYỀN QUẢN TRỊ TỐI CAO: <br>
+                › Tất cả các tính năng của quyền quản trị cấp cao. <br>
+                › Bộ sưu tập background - orchestrator. <br>
+                › Truy cập sớm các tính năng mới. <br>
+                › Profile ultra: <br>
+                <br>
+                - Sảnh giao diện của tương lai. <br>
+                - Hệ thống thời tiết tự động. <br>
+                - Bảng điều khiển đa năng. <br>
+                - Thẻ thông hành hệ thống. <br>
+                - Trợ lý tài chính cá nhân. 
+            </div>
+        </div>
+
+    </div>
+
+    <div class="action-dock">
+        <button class="btn-action btn-cancel" onclick="window.location.href='hologram1.html'">
+            CANCEL
+        </button>
+        <button class="btn-action btn-upgrade" onclick="window.location.href='admin.html'">
+            UPGRADE
+        </button>
+    </div>
+
+    <script>
+        // Hiệu ứng background
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 30; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.animationDelay = (Math.random() * -10) + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // --- HÀM CHUYỂN TRANG TAB (MỚI) ---
+        function togglePage(pageNum) {
+            // Ẩn tất cả các trang tab
+            document.querySelectorAll('.tab-page').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // Hiện trang được chọn
+            const selectedPage = document.getElementById(`page-${pageNum}`);
+            selectedPage.classList.remove('hidden');
+
+            // Hiệu ứng Fade in nhẹ
+            selectedPage.style.opacity = 0;
+            setTimeout(() => selectedPage.style.opacity = 1, 50);
+        }
+
+        // --- HÀM CHUYỂN RANK (CẬP NHẬT CHO 4 CẤP) ---
+        function switchRank(level) {
+            // 1. Reset trạng thái nút Tab (trên cả 2 trang)
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // 2. Active nút vừa bấm
+            // Lưu ý: Vì nút nằm rải rác ở 2 trang, ta cần tìm đúng nút chứa text tương ứng hoặc dùng logic index
+            // Cách đơn giản: Tìm nút nào có onclick chứa số level tương ứng
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => {
+                if (btn.getAttribute('onclick') === `switchRank(${level})`) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // 3. Ẩn tất cả thẻ
+            document.querySelectorAll('.level-card').forEach(card => card.classList.remove('show'));
+
+            // 4. Hiện thẻ tương ứng với hiệu ứng trễ
+            setTimeout(() => {
+                document.getElementById(`card-${level}`).classList.add('show');
+            }, 100); 
+        }
+    </script>
+
+</body>
+</html>

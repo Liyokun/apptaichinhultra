@@ -1,262 +1,442 @@
 /* =================================================================
-   FILE DESIGN: CHỨA TOÀN BỘ GIAO DIỆN VÀ CSS CỦA APP
+   FILE DESIGN: PROFESSIONAL GLASS UI (FULL INTEGRATION - FIXED)
    ================================================================= */
+
+/* --- 1. BIẾN MÀU & NỀN TẢNG --- */
 :root {
-    --primary: #2196F3;
-    --success: #4CAF50;
-    --danger: #D32F2F; 
-    --warning: #FF9800;
-    --bg: #f0f2f5;
-    --card-bg: #ffffff;
-    --text: #333;
-    --input-bg: #ffffff;
-    --neon-blue: #00f2ff; /* Màu cho hiệu ứng */
+    --neon: #00f2ff;       
+    --neon-pink: #ff0088;  
+    --neon-green: #00ff88; 
+    --danger: #ff073a;     
+    --warning: #FF9800; 
+    
+    --bg: #02050a;
+    --card-bg: rgba(0, 15, 25, 0.85); 
+    --text: #00f2ff;
+    --text-dim: #ffffff; /* Trắng sáng 100% */
+    
+    --glow-text: 0 0 5px var(--neon), 0 0 10px var(--neon);
 }
 
-[data-theme="dark"] {
-    --bg: #121212;
-    --card-bg: #1e1e1e;
-    --text: #e0e0e0;
-    --input-bg: #2d2d2d;
-    --danger: #ff5252;
-}
+[data-theme="light"] { --bg: #02050a; --card-bg: rgba(0, 242, 255, 0.05); --text: #00f2ff; }
 
+/* --- 2. CẤU HÌNH KHÔNG GIAN 3D --- */
 body {
-    font-family: -apple-system, system-ui, Roboto, sans-serif;
-    background-color: var(--bg);
+    font-family: 'Segoe UI', monospace;
+    background-color: black;
     color: var(--text);
-    margin: 0;
-    padding-bottom: 85px;
-    transition: 0.3s;
-    -webkit-tap-highlight-color: transparent;
-    overflow-x: hidden;
+    margin: 0; 
+    height: 100vh; width: 100vw; overflow: hidden; 
+    perspective: 1200px; transform-style: preserve-3d;
 }
 
-/* --- Navbar --- */
-.nav-container {
-    position: fixed; bottom: 0; left: 0; width: 100%;
-    background: var(--card-bg);
-    display: flex; padding: 10px 0;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-    z-index: 1000; border-top: 1px solid #eee;
+/* Wall & Floor & Particles */
+.wall {
+    position: fixed; top: -50%; left: 0; width: 200%; height: 150%;
+    background-image: linear-gradient(var(--neon) 1px, transparent 1px), linear-gradient(90deg, var(--neon) 1px, transparent 1px);
+    background-size: 60px 60px; opacity: 0.3; transform: translateZ(-500px); 
+    mask-image: radial-gradient(circle, black, transparent 80%); pointer-events: none; z-index: -10;
 }
-[data-theme="dark"] .nav-container { border-top-color: #333; }
-.nav-item { flex: 1; text-align: center; font-size: 10px; color: #999; background: none; border: none; cursor: pointer; }
-.nav-item.active { color: var(--primary); font-weight: 700; }
-.nav-icon { display: block; font-size: 22px; margin-bottom: 3px; }
 
-/* --- UI Elements --- */
-.screen { display: none; padding: 15px; animation: fadeIn 0.2s ease-out; }
+.floor {
+    position: fixed; bottom: -50%; left: 0; width: 200%; height: 200%;
+    background-image: linear-gradient(var(--neon) 1px, transparent 1px), linear-gradient(90deg, var(--neon) 1px, transparent 1px);
+    background-size: 60px 60px; opacity: 0.2; transform: rotateX(90deg) translateZ(-200px);
+    pointer-events: none; z-index: -10;
+}
+
+.tech-particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
+.particle { position: absolute; width: 2px; height: 2px; background: var(--neon); border-radius: 50%; box-shadow: 0 0 4px var(--neon); opacity: 0; animation: particle-float 12s ease-in-out infinite; }
+@keyframes particle-float { 0% { opacity: 0; transform: translate3d(0, 0, 0); } 10% { opacity: 0.6; } 90% { opacity: 0.6; } 100% { opacity: 0; transform: translate3d(var(--px), var(--py), var(--pz)); } }
+
+/* --- 3. CẤU HÌNH MÀN HÌNH --- */
+.screen { 
+    display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    overflow-y: auto; overflow-x: hidden; padding: 15px; padding-bottom: 120px; box-sizing: border-box;
+    animation: fadeIn 0.3s ease-out; 
+}
 .screen.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-#screen-status { padding: 0 !important; height: calc(100vh - 70px); width: 100%; position: relative; overflow: hidden; }
+/* ==========================================================================
+   4. GIAO DIỆN TASK: AURA HUYỀN ẢO
+   ========================================================================== */
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+/* Trạng thái TĨNH */
+.card:not(#budget-details):not(.history-card) {
+    position: relative;
+    background: rgba(0, 10, 15, 0.9); /* Lõi tối để nổi bật Aura */
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--neon);
+    border-radius: 12px;
+    margin-bottom: 50px; 
+    padding: 25px 20px;
+    /* HIỆU ỨNG AURA MẶC ĐỊNH */
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.5), inset 0 0 15px rgba(0, 242, 255, 0.2);
+    transform: translateZ(20px); /* Luôn nổi lên khỏi sàn */
+    clip-path: none; 
+    transition: all 0.4s ease;
+    transform-style: preserve-3d;
+}
 
-h2 { color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 1.4rem; margin-top: 0; }
-.card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-.group-title { font-weight: 700; margin-bottom: 12px; color: var(--text); font-size: 1.1rem; }
 
-/* --- Inputs --- */
-.input-group { margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
-.k-input-wrapper { position: relative; width: 120px; }
-.k-input-wrapper::after { content: "K"; position: absolute; right: 10px; top: 12px; color: #888; font-weight: bold; pointer-events: none; }
+/* Trạng thái KÍCH HOẠT (AURA) - Được JS thêm vào khi click vùng trống */
+.card:not(#budget-details):not(.history-card).is-active {
+    transform: scale(1.01) translateZ(30px); 
+    background: rgba(0, 10, 15, 0.98); /* Lõi tối */
+    border-color: var(--neon);
+    box-shadow: 
+        0 0 15px rgba(0, 242, 255, 0.6),  
+        0 0 50px rgba(0, 242, 255, 0.3); 
+    z-index: 100;
+}
 
+.card:not(#budget-details):not(.history-card)::before,
+.card:not(#budget-details):not(.history-card)::after { display: none; }
+/* Chống nhòe và xiên chữ khi dùng 3D */
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    transform: translateZ(20px) rotateX(0deg); 
+}
+/* Tiêu đề & Nội dung */
+h2 { 
+    color: var(--neon); font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;
+    text-shadow: 0 0 15px var(--neon);
+    border-bottom: 1px solid rgba(0, 242, 255, 0.3); padding-bottom: 15px; margin-top: 0; margin-bottom: 20px;
+}
+
+.group-title { 
+    display: inline-block; background: rgba(0, 242, 255, 0.1); border: 1px solid rgba(0, 242, 255, 0.4);
+    border-radius: 4px; padding: 5px 12px; color: var(--neon); font-size: 11px; font-weight: bold; 
+    text-transform: uppercase; margin-bottom: 15px; border-left: none;
+}
+
+/* --- INPUT TĨNH (ĐÚNG YÊU CẦU: KHÔNG BAY LÊN, KHÔNG AURA TO) --- */
+.input-group { margin-bottom: 20px; }
+
+/* --- CẬP NHẬT INPUT: MÀU KÍNH SÁNG & ĐỒNG BỘ --- */
 input {
-    background: var(--input-bg); color: var(--text);
-    width: 100%; padding: 12px 25px 12px 10px;
-    border: 1px solid #ddd; border-radius: 8px;
-    font-size: 16px; text-align: right; outline: none;
-    box-sizing: border-box;
+    /* Hiệu ứng tạc qua: Chuyển từ xanh mờ sang trong suốt (90 độ từ trái sang phải) */
+    background: linear-gradient(90deg, rgba(0, 242, 255, 0.15) 0%, rgba(0, 242, 255, 0.02) 100%); 
+    
+    color: var(--neon); 
+    border: 1px solid rgba(0, 242, 255, 0.4); 
+    border-radius: 8px;
+    padding: 14px; 
+    font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: 1px;
+    width: 100%; box-sizing: border-box; 
+    
+    position: relative;
+    z-index: 20; 
+    transition: all 0.4s ease;
+    
+    /* Hiệu ứng đổ bóng nội thất để tạo độ khối */
+    box-shadow: inset 2px 2px 10px rgba(0, 242, 255, 0.05);
 }
-input:focus { border-color: var(--primary); }
 
-/* --- CSS Logic Display --- */
-.total-row { background: rgba(33, 150, 243, 0.1); padding: 10px; border-radius: 8px; text-align: right; font-weight: bold; color: var(--primary); margin-top: 5px; }
-.budget-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dashed #eee; font-size: 15px; }
-.budget-val { font-weight: bold; font-family: monospace; font-size: 1.1rem; }
+/* Khi nhấp vào: Chuyển tiếp đảo ngược hoặc đậm hơn để tạo sự chú ý */
+input:focus { 
+    background: linear-gradient(90deg, rgba(0, 242, 255, 0.25) 0%, rgba(0, 242, 255, 0.05) 100%);
+    border-color: var(--neon);
+    box-shadow: 
+        0 0 15px rgba(0, 242, 255, 0.3), 
+        inset 0 0 10px rgba(0, 242, 255, 0.1);
+    outline: none;
+    transform: translateX(2px); /* Nhích nhẹ sang phải để tạo cảm giác tương tác vật lý */
+}
 
-.saving-box { background: rgba(255, 152, 0, 0.1); border: 1px solid var(--warning); padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; }
-.saving-label { color: var(--warning); font-weight: bold; font-size: 14px; text-transform: uppercase; }
-.saving-value { color: var(--warning); font-size: 20px; font-weight: 800; font-family: monospace; margin-top: 5px; }
+/* KHI CHẠM VÀO: Giữ tĩnh, chỉ đổi màu nền Gradient mượt mà */
+input:focus { 
+    /* Gradient đậm hơn một chút nhưng không phát sáng chói */
+    background: linear-gradient(90deg, rgba(0, 242, 255, 0.18) 0%, rgba(0, 242, 255, 0.05) 100%);
+    
+    border-color: var(--neon); /* Viền chỉ đổi màu, không tỏa sáng Aura */
+    
+    box-shadow: inset 0 0 8px rgba(0, 242, 255, 0.1); /* Chỉ giữ sáng nhẹ bên trong cho có độ khối */
+    
+    outline: none;
+    transform: none; /* Giữ đứng im tuyệt đối để gõ phím chuẩn xác */
+}
 
-.balance-box { background: rgba(76, 175, 80, 0.1); border: 2px solid var(--success); padding: 20px; border-radius: 12px; text-align: center; }
-.balance-label { color: var(--text); font-weight: bold; font-size: 16px; margin-bottom: 5px; }
-.balance-value { font-size: 32px; font-weight: 900; font-family: monospace; color: var(--success); }
+/* FIX LỖI CHỮ K: Giữ chữ K nằm đúng vị trí trong Input */
+.k-input-wrapper {
+    position: relative; /* Neo để chữ K không bị bay lên đầu */
+    display: block;
+    width: 100%;
+}
 
-.text-red { color: var(--danger) !important; }
-.text-green { color: var(--success) !important; }
-.border-red { border-color: var(--danger) !important; background: rgba(211, 47, 47, 0.1) !important; }
+.k-input-wrapper::after { 
+    content: "K"; 
+    position: absolute; 
+    right: 15px; 
+    top: 50%; /* Căn giữa dọc */
+    transform: translateY(-50%); 
+    color: var(--neon); 
+    opacity: 0.9; 
+    font-weight: bold; 
+    z-index: 21; 
+    pointer-events: none;
+    text-shadow: 0 0 10px var(--neon); /* Chữ K rực sáng */
+}
 
-.btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; margin-top: 10px;}
-.btn-primary { background: var(--primary); }
-.btn-success { background: var(--success); }
-.note-btn { width: 100%; padding: 8px; background: rgba(0,0,0,0.05); border: none; border-radius: 6px; color: var(--primary); margin-top: 5px; cursor: pointer; }
+/* Buttons */
+.btn {
+    background: rgba(0, 242, 255, 0.1); border: 1px solid var(--neon); color: var(--neon); 
+    text-transform: uppercase; letter-spacing: 2px; border-radius: 8px; padding: 16px; margin-top: 25px; width: 100%; 
+    font-family: 'Courier New', monospace; font-weight: bold; clip-path: none; transition: 0.2s; cursor: pointer;
+    position: relative; z-index: 10;
+}
+.btn:hover { background: rgba(0, 242, 255, 0.2); box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); }
+.btn:active { background: var(--neon); color: #000; transform: scale(0.98); }
 
-/* --- CSS LỊCH SỬ --- */
-.history-card { padding: 0 !important; overflow: hidden; border: 1px solid #eee; }
-.history-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: var(--card-bg); transition: background 0.2s; }
-.history-header:active { background: rgba(0,0,0,0.05); }
-.history-details { display: none; padding: 15px; border-top: 1px dashed #eee; background: rgba(0,0,0,0.015); animation: slideDown 0.25s ease-out; }
+.btn-mini { 
+    border: 1px solid rgba(0, 242, 255, 0.3); background: transparent; padding: 6px 12px; border-radius: 4px; 
+    color: rgba(0, 242, 255, 0.7); font-weight: bold; cursor: pointer; margin-left: 5px; clip-path: none; 
+    position: relative; z-index: 10;
+}
+.btn-mini:hover { border-color: var(--neon); color: var(--neon); background: rgba(0,242,255,0.1); }
+
+/* Số liệu */
+.total-row, .saving-box, .balance-box { 
+    background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 8px; 
+    color: var(--neon); padding: 15px; text-align: center; margin-bottom: 15px; clip-path: none; 
+}
+.saving-value, .balance-value { color: var(--neon); text-shadow: 0 0 5px rgba(0, 242, 255, 0.5); font-size: 24px; font-weight: bold; margin-top: 5px; }
+.saving-label, .balance-label { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+
+.text-red { color: #ff4d4d !important; text-shadow: 0 0 5px #ff4d4d; }
+.text-green { color: var(--neon) !important; }
+/* Style mới cho ô dự tính - Đồng bộ phong cách kính tối */
+.saving-preview-box {
+    background: rgba(0, 0, 0, 0.4); 
+    border: 1px dashed var(--neon); /* Dùng viền đứt để phân biệt đây là số 'dự tính' */
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    margin-top: 20px;
+    backdrop-filter: blur(5px);
+}
+
+.saving-preview-box .saving-label {
+    color: var(--text-dim);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
+.saving-preview-box .saving-value {
+    color: var(--neon);
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+}
+
+/* --- 5. GIỮ NGUYÊN TUYỆT ĐỐI CÁC PHẦN CÒN LẠI --- */
+
+#screen-status.active ~ .tech-particles, 
+#screen-status.active ~ .wall, 
+#screen-status.active ~ .floor { display: none; } 
+
+/* Navbar Kính */
+.nav-container {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 80%; max-width: 400px;
+    background: rgba(0, 5, 10, 0.8); backdrop-filter: blur(10px);
+    border: 1px solid var(--neon); border-radius: 30px;
+    display: flex; padding: 10px 20px; box-shadow: 0 0 20px rgba(0, 242, 255, 0.2); z-index: 1000;
+}
+.nav-container button {
+    background: none; border: none; color: var(--neon); 
+    font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: 2px; 
+    cursor: pointer; text-shadow: 0 0 5px var(--neon); transition: 0.3s;
+}
+.nav-container button:hover { color: #fff; text-shadow: 0 0 15px var(--neon); }
+
+/* Tùy chỉnh riêng cho nút Hướng dẫn sử dụng (Nút cuối cùng) */
+.nav-container button:last-child {
+    color: var(--neon); /* Đổi sang xanh lá để phân biệt task hướng dẫn */
+    text-shadow: 0 0 10px var(--neon);
+    border-left: 1px solid rgba(0, 242, 255, 0.3);
+    padding-left: 15px;
+    margin-left: 5px;
+}
+.nav-container button:last-child:hover {
+    color: #fff;
+    text-shadow: 0 0 20px var(--neon);
+}
+
+/* History Card */
+.history-card { padding: 0 !important; overflow: hidden; border: 1px solid rgba(0,242,255,0.3); margin-bottom: 20px; border-radius: 12px; background: rgba(0, 15, 25, 0.8); backdrop-filter: blur(10px); }
+.history-header { background: rgba(0, 242, 255, 0.03); padding: 20px; border-bottom: 1px solid rgba(0, 242, 255, 0.1); display: block !important; justify-content: space-between; align-items: center; cursor: pointer; }
+.history-details { background: rgba(0, 0, 0, 0.6); border-top: 1px solid rgba(0,242,255,0.2); padding: 15px; display: none; }
 .history-details.show { display: block; }
-@keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
-/* --- CSS HIỆU ỨNG (Magic) --- */
-#display-area { width: 100%; height: 100%; background-size: cover; background-position: center; transition: 1s ease-in-out; position: relative; }
-.effect-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+/* Magic Effect */
+#display-area { width: 100%; height: 100%; background-size: cover; background-position: center; transition: 1s ease-in-out; position: relative; z-index: 1; }
+/* --- THÊM CÁC DÒNG NÀY ĐỂ FIX GIẬT XUYÊN THẤU --- */
+    transform: translateZ(-1px); /* Đẩy ảnh lùi về sau 1 chút so với hiệu ứng hạt */
+    backface-visibility: hidden;
+    perspective: none;
+    -webkit-transform-style: flat; /* Khử xung đột 3D cho riêng lớp ảnh */
+    transform-style: flat;
+    will-change: background-image; /* Báo trước cho GPU để xử lý mượt hơn */
+}
 
-.sun-beam {
-    position: absolute; width: 400%; height: 400%; top: -150%; left: -150%;
-    background: repeating-conic-gradient(from 0deg, rgba(255,215,0,0) 0deg, rgba(255,215,0,0.1) 15deg, rgba(255,215,0,0) 30deg);
-    animation: sun-rotate 30s linear infinite; mix-blend-mode: screen; filter: blur(4px);
+/* Đảm bảo hiệu ứng hạt luôn nằm trên ảnh 1 chút */
+#visual-effect {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    transform: translateZ(1px); /* Đẩy hạt lên phía trước ảnh */
 }
-.sun-dust {
-    position: absolute; background: #fffacd; border-radius: 50%;
-    box-shadow: 0 0 5px gold; animation: float-up linear infinite;
-}
+.effect-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+.sun-beam { position: absolute; width: 400%; height: 400%; top: -150%; left: -150%; background: repeating-conic-gradient(from 0deg, rgba(255,215,0,0) 0deg, rgba(255,215,0,0.1) 15deg, rgba(255,215,0,0) 30deg); animation: sun-rotate 30s linear infinite; mix-blend-mode: screen; filter: blur(4px); }
+.sun-dust { position: absolute; background: #fffacd; border-radius: 50%; box-shadow: 0 0 5px gold; animation: float-up linear infinite; }
 @keyframes sun-rotate { 100% { transform: rotate(360deg); } }
-@keyframes float-up { 
-    0% { transform: translateY(100vh) translateX(0); opacity: 0; } 
-    50% { opacity: 1; }
-    100% { transform: translateY(-10vh) translateX(20px); opacity: 0; } 
-}
-
-.bubble {
-    position: absolute; bottom: -20px;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
-    border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 50%;
-    animation: bubble-rise linear infinite; box-shadow: inset -2px -2px 5px rgba(255, 255, 255, 0.2);
-}
-@keyframes bubble-rise {
-    0% { transform: translateY(0) translateX(0); opacity: 0; }
-    10% { opacity: 0.8; }
-    100% { transform: translateY(-110vh) translateX(30px); opacity: 0; }
-}
-
+@keyframes float-up { 0% { transform: translateY(100vh) translateX(0); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(-10vh) translateX(20px); opacity: 0; } }
+.bubble { position: absolute; bottom: -20px; background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1)); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 50%; animation: bubble-rise linear infinite; box-shadow: inset -2px -2px 5px rgba(255, 255, 255, 0.2); }
+@keyframes bubble-rise { 0% { transform: translateY(0) translateX(0); opacity: 0; } 10% { opacity: 0.8; } 100% { transform: translateY(-110vh) translateX(30px); opacity: 0; } }
 .petal { position: absolute; background: #ffc0cb; border-radius: 150% 0 150% 0; animation: fall-sway linear infinite; }
 @keyframes fall-sway { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
-
 .rain-drop { position: absolute; width: 2px; height: 20px; background: rgba(255,255,255,0.6); animation: rain-fall 0.7s linear infinite; }
 @keyframes rain-fall { 100% { transform: translateY(100vh); } }
-
 .snow-flake { position: absolute; background: white; border-radius: 50%; animation: snow-fall linear infinite; }
 @keyframes snow-fall { 100% { transform: translateY(100vh); opacity: 0.3; } }
+.hologram-info { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); padding: 10px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); text-align: center; color: white; width: 80%; z-index: 10; }
 
-.hologram-info {
-    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
-    padding: 10px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2);
-    text-align: center; color: white; width: 80%;
-}
-
-/* --- SPLASH SCREEN STYLES --- */
-#splash-screen {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
-    z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    transition: opacity 0.8s ease-out;
-}
-
-.atomic-system {
-    position: relative;
-    width: 260px; height: 260px; 
-    margin-bottom: 50px;
-    perspective: 1000px;
-    transform-style: preserve-3d;
-    display: flex; align-items: center; justify-content: center;
-}
-
-.core-glow {
-    position: absolute; width: 24px; height: 24px;
-    background: #00f2ff;
-    border-radius: 50%;
-    box-shadow: 0 0 20px #00f2ff, 0 0 60px #00f2ff;
-    animation: pulse 2s infinite ease-in-out;
-    z-index: 10;
-}
+/* Splash Screen & Loader & Atomic System */
+#splash-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.8s ease-out; }
+.atomic-system { position: relative; width: 260px; height: 260px; margin-bottom: 50px; perspective: 1000px; transform-style: preserve-3d; display: flex; align-items: center; justify-content: center; }
+.core-glow { position: absolute; width: 24px; height: 24px; background: #00f2ff; border-radius: 50%; box-shadow: 0 0 20px #00f2ff, 0 0 60px #00f2ff; animation: pulse 2s infinite ease-in-out; z-index: 10; }
 @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.3); opacity: 1; } }
-
-.orbit-plane {
-    position: absolute; width: 100%; height: 100%;
-    border: 1px solid rgba(0, 242, 255, 0.15);
-    border-radius: 50%;
-    transform-style: preserve-3d;
-}
-
+.orbit-plane { position: absolute; width: 100%; height: 100%; border: 1px solid rgba(0, 242, 255, 0.15); border-radius: 50%; transform-style: preserve-3d; }
 .plane-1 { transform: rotateX(70deg) rotateY(0deg); }
 .plane-2 { transform: rotateX(70deg) rotateY(120deg); }
 .plane-3 { transform: rotateX(70deg) rotateY(240deg); }
-
-.spinner {
-    position: absolute; width: 100%; height: 100%;
-    transform-style: preserve-3d;
-    animation: spin-orbit linear infinite;
-}
-
+.spinner { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; animation: spin-orbit linear infinite; }
 .spin-1 { animation-duration: 4s; }
 .spin-2 { animation-duration: 5s; animation-direction: reverse; }
 .spin-3 { animation-duration: 6s; }
-
 @keyframes spin-orbit { from { transform: rotateZ(0deg); } to { transform: rotateZ(360deg); } }
-
-.cube-wrapper {
-    position: absolute;
-    top: -15px; left: 50%; width: 30px; height: 30px;
-    margin-left: -15px;
-    transform-style: preserve-3d;
-    animation: cube-self 3s linear infinite; 
-}
-
+.cube-wrapper { position: absolute; top: -15px; left: 50%; width: 30px; height: 30px; margin-left: -15px; transform-style: preserve-3d; animation: cube-self 3s linear infinite; }
 @keyframes cube-self { from { transform: rotateX(0deg) rotateY(0deg); } to { transform: rotateX(360deg) rotateY(360deg); } }
-
 .cube-svg { width: 100%; height: 100%; filter: drop-shadow(0 0 5px #00f2ff); }
 .cube-line { fill: none; stroke: #00f2ff; stroke-width: 2; stroke-linecap: round; }
-
 .neon-title { color: #00f2ff; font-size: 32px; font-weight: 200; letter-spacing: 4px; text-shadow: 0 0 15px #00f2ff; margin: 0; text-align: center; }
 .sub-title { color: #666; font-size: 11px; letter-spacing: 3px; margin: 10px 0 60px 0; text-transform: uppercase; }
-
 .start-btn { background: transparent; color: #00f2ff; border: 2px solid #00f2ff; padding: 15px 45px; border-radius: 50px; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 0 15px rgba(0,242,255,0.2); letter-spacing: 1px; }
 .start-btn:hover { background: #00f2ff; color: #000; box-shadow: 0 0 40px #00f2ff; }
-
 #loading-container { display: none; flex-direction: column; align-items: center; }
 .loader { width: 40px; height: 40px; border: 3px solid #333; border-top: 3px solid #39ff14; border-radius: 50%; animation: load-spin 1s infinite linear; margin-bottom: 20px; box-shadow: 0 0 10px #39ff14; }
 @keyframes load-spin { to { transform: rotate(360deg); } }
 .loading-text { color: #888; font-size: 12px; letter-spacing: 2px; }
 
-/* --- CSS CHO HỆ THỐNG VÍ ĐỘNG --- */
-
-/* Nút mini (Lưu/Xóa/Thêm) */
-.btn-mini {
-    padding: 8px 12px;
-    border: none; border-radius: 6px;
-    font-size: 12px; font-weight: bold;
-    cursor: pointer; color: white;
-}
-.btn-save { background-color: var(--primary); }
-.btn-undo { background-color: #999; }
-.btn-add { background-color: var(--success); font-size: 13px; }
-
-/* Nút xóa thùng rác (Đã ẩn icon cũ, dùng class mới bên dưới) */
-.btn-icon-del { display: none; }
-
-/* Điều chỉnh lại layout input cho đẹp */
-.input-group input { font-weight: bold; }
-
-/* --- Nút Xóa Ví dạng chữ (Rõ ràng & An toàn) --- */
 .btn-del-text {
-    background-color: #ffebee; /* Nền đỏ rất nhạt */
-    color: #d32f2f;            /* Chữ đỏ đậm */
-    border: 1px solid #ffcdd2;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.5px;
+    background: rgba(255, 7, 58, 0.1); color: var(--danger); border: 1px solid var(--danger);
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+    padding: 5px 10px; cursor: pointer; font-weight: bold;
 }
-.btn-del-text:active {
-    background-color: #d32f2f;
-    color: white;
-    transform: scale(0.95);
+.btn-del-text:active { background: var(--danger); color: #000; }
+
+/* =================================================================
+   PHẦN BỔ SUNG MỚI (POPUP NEON & NGÀY ĐẦU KỲ & LỊCH SỬ)
+   ================================================================= */
+
+/* 1. Dòng hiển thị ngày đầu kỳ (Chữ mảnh dưới tiêu đề) */
+.start-date-display {
+    font-size: 13px;
+    color: var(--text-dim); /* Màu trắng sáng đồng bộ */
+    opacity: 0.7;
+    margin-top: -15px; /* Kéo sát lên phía trên để liền mạch với tiêu đề */
+    margin-bottom: 25px;
+    letter-spacing: 1.5px;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    width: 100%;
+}
+
+/* 2. Dòng hiển thị chu kỳ ngày tháng trong thẻ History */
+.history-date-range {
+    font-size: 12px;
+    color: var(--neon);
+    text-shadow: 0 0 5px var(--neon);
+    margin-top: 5px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    opacity: 0.9;
+}
+
+/* 3. HỆ THỐNG POPUP NEON (Đồng bộ Style Admin.html) */
+.neon-popup-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); /* Nền tối mờ mạnh */
+    backdrop-filter: blur(8px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.neon-popup-box {
+    width: 85%; max-width: 320px;
+    background: rgba(0, 10, 15, 0.95);
+    border: 1px solid var(--neon);
+    padding: 25px 20px;
+    text-align: center;
+    color: var(--neon);
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.4), inset 0 0 10px rgba(0, 242, 255, 0.1);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn { 
+    from {transform: scale(0.8); opacity: 0;} 
+    to {transform: scale(1); opacity: 1;} 
+}
+
+.neon-popup-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px var(--neon);
+    border-bottom: 1px solid rgba(0, 242, 255, 0.3);
+    padding-bottom: 10px;
+}
+
+.popup-msg { 
+    margin-bottom: 25px; 
+    font-size: 14px; 
+    line-height: 1.6; 
+    color: #fff;
+}
+
+.popup-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.neon-popup-btn {
+    background: transparent;
+    border: 1px solid var(--neon);
+    color: var(--neon);
+    padding: 10px 25px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    text-transform: uppercase;
+    transition: 0.3s;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.neon-popup-btn:hover {
+    background: var(--neon);
+    color: #000;
+    box-shadow: 0 0 15px var(--neon);
 }

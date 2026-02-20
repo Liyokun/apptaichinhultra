@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHÂN TÍCH TỶ TRỌNG</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --neon: #00f2ff; --bg-deep: #050b14; }
+        
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            background-color: #000; /* Nền gốc màu đen */
+            font-family: 'Segoe UI', sans-serif; color: #fff; 
+            overflow: hidden; user-select: none;
+            position: relative; /* Để định vị lớp nền mờ */
+        }
+
+        /* --- CẤU HÌNH BACKGROUND RIÊNG (ĐỘ MỜ 10%) --- */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: url('./bieudo1.jpg') center center / cover no-repeat;
+            opacity: 0.7; /* Độ mờ 10% */
+            z-index: 0;   /* Nằm dưới cùng */
+            pointer-events: none;
+        }
+
+        /* Chỉ giữ lại layer bụi, bỏ layer nổ */
+        #dust-container { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+
+        /* Header Neon */
+        .header {
+            position: absolute; top: 30px; width: 100%; text-align: center; z-index: 20;
+        }
+        .header h1 {
+            margin: 0; font-size: 20px; letter-spacing: 4px; color: var(--neon);
+            text-shadow: 0 0 15px var(--neon); text-transform: uppercase;
+            font-weight: 300; border-bottom: 1px solid rgba(0, 242, 255, 0.3);
+            display: inline-block; padding: 10px 40px;
+            background: rgba(0, 5, 10, 0.8); backdrop-filter: blur(4px);
+        }
+
+        /* Container chứa biểu đồ */
+        .chart-container {
+            position: relative;
+            width: 90vw; height: 50vh; 
+            margin: 120px auto 20px auto;
+            z-index: 10;
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        /* Hiệu ứng Glow cho cả biểu đồ */
+        canvas#expenseChart {
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+        }
+
+        /* Phần hiển thị tổng tiền */
+        .total-display {
+            text-align: center; z-index: 10; position: relative;
+            margin-top: 20px;
+        }
+        .total-label { color: #888; font-size: 12px; letter-spacing: 2px; }
+        .total-value { 
+            font-size: 28px; font-weight: bold; color: var(--neon);
+            text-shadow: 0 0 10px var(--neon); margin-top: 5px;
+        }
+
+        /* Nút Back tròn */
+        .back-circle {
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 55px; height: 55px; border: 1.5px solid var(--neon); border-radius: 50%;
+            background: rgba(0,5,10,0.8); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 100; box-shadow: 0 0 15px rgba(0,242,255,0.2);
+            transition: 0.3s;
+        }
+        .back-circle:active { transform: translateX(-50%) scale(0.9); background: var(--neon); }
+        .back-circle:active svg { stroke: #000; }
+
+        /* Bụi */
+        .dust {
+            position: absolute; background: var(--neon); border-radius: 50%;
+            box-shadow: 0 0 6px var(--neon); opacity: 0.6; animation: float linear infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(110vh) scale(0.3); opacity: 0; }
+            100% { transform: translateY(-20vh) scale(1); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="dust-container"></div>
+
+    <div class="header"><h1>TỶ TRỌNG CHI TIÊU</h1></div>
+
+    <div class="chart-container">
+        <canvas id="expenseChart"></canvas>
+    </div>
+
+    <div class="total-display">
+        <div class="total-label">TỔNG ĐÃ CHI TIÊU</div>
+        <div class="total-value" id="total-spent-display">LOADING...</div>
+    </div>
+
+    <div class="back-circle" onclick="window.location.href='./bieudo.html'">
+        <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--neon)" stroke-width="2" fill="none"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </div>
+
+    <script>
+        // --- 1. LẤY DỮ LIỆU TỪ LOGIC.JS ---
+        function loadDataAndDraw() {
+            const rawData = localStorage.getItem('app_data_v4');
+            const appData = rawData ? JSON.parse(rawData) : { wallets: [] };
+
+            const activeWallets = appData.wallets.filter(w => w.spent > 0);
+            const totalSpent = activeWallets.reduce((sum, w) => sum + w.spent, 0);
+            
+            document.getElementById('total-spent-display').innerText = 
+                (totalSpent * 1000).toLocaleString('vi-VN') + " VNĐ";
+
+            const labels = activeWallets.map(w => w.name);
+            const dataValues = activeWallets.map(w => w.spent * 1000);
+
+            if (activeWallets.length === 0) {
+                document.getElementById('total-spent-display').innerText = "CHƯA CÓ DỮ LIỆU";
+                return;
+            }
+
+            drawNeonChart(labels, dataValues);
+        }
+
+        // --- 2. VẼ BIỂU ĐỒ ĐA SẮC CÓ SỐ % ---
+        function drawNeonChart(labels, data) {
+            const ctxChart = document.getElementById('expenseChart').getContext('2d');
+            
+            // DANH SÁCH MÀU NEON
+            const neonPalette = [
+                '#00f2ff', // Cyan
+                '#ff00ff', // Magenta
+                '#39ff14', // Neon Green
+                '#ffe744', // Neon Yellow
+                '#ff8c00', // Neon Orange
+                '#bc13fe', // Neon Purple
+                '#ff073a'  // Neon Red
+            ];
+
+            const borderColors = data.map((_, i) => neonPalette[i % neonPalette.length]);
+
+            // PLUGIN VẼ SỐ % LÊN BIỂU ĐỒ
+            const percentagePlugin = {
+                id: 'percentagePlugin',
+                afterDatasetsDraw(chart, args, options) {
+                    const { ctx, data } = chart;
+                    ctx.save();
+                    
+                    const meta = chart.getDatasetMeta(0);
+                    const dataset = data.datasets[0];
+                    const total = dataset.data.reduce((acc, val) => acc + val, 0);
+
+                    meta.data.forEach((element, index) => {
+                        if (dataset.data[index] > 0) {
+                            const { x, y } = element.getCenterPoint();
+                            const value = dataset.data[index];
+                            const percent = ((value / total) * 100).toFixed(1) + '%';
+                            
+                            ctx.font = 'bold 11px "Segoe UI"';
+                            ctx.fillStyle = '#ffffff'; 
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            
+                            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                            ctx.shadowBlur = 4;
+                            ctx.shadowOffsetX = 1;
+                            ctx.shadowOffsetY = 1;
+
+                            ctx.fillText(percent, x, y);
+                        }
+                    });
+                    ctx.restore();
+                }
+            };
+
+            new Chart(ctxChart, {
+                type: 'doughnut', 
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: 'transparent',
+                        borderColor: borderColors,
+                        borderWidth: 2,
+                        hoverBackgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        hoverBorderWidth: 4,
+                        hoverBorderColor: '#fff'
+                    }]
+                },
+                plugins: [percentagePlugin],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%', 
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#fff', 
+                                font: { family: 'Segoe UI', size: 12 },
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) label += ': ';
+                                    let value = context.raw;
+                                    return label + value.toLocaleString('vi-VN') + ' VNĐ';
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    },
+                    // Đã xóa sự kiện onClick tạo nổ
+                }
+            });
+        }
+
+        // --- 3. CHỈ CÒN HIỆU ỨNG BỤI (Dust Only) ---
+        function createDust() {
+            const c = document.getElementById('dust-container');
+            for(let i=0; i<50; i++) {
+                const d = document.createElement('div'); d.className='dust';
+                d.style.left=Math.random()*100+'vw'; d.style.width=d.style.height=(Math.random()*3+1)+'px';
+                d.style.animationDuration=(Math.random()*10+5)+'s'; d.style.animationDelay='-'+Math.random()*10+'s';
+                c.appendChild(d);
+            }
+        }
+        createDust();
+
+        window.onload = loadDataAndDraw;
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI TERMINAL - SYSTEM CORE</title>
+    <style>
+        :root { 
+            --neon-ai: #39ff14; /* Xanh lá AI kinh điển */
+            --neon-bg: rgba(57, 255, 20, 0.05);
+        }
+        
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            background: #02050a; /* Nền tối sâu */
+            font-family: 'Courier New', monospace; color: var(--neon-ai); 
+            overflow: hidden; user-select: none;
+        }
+
+        /* --- HIỆU ỨNG NỀN 3D --- */
+        .perspective-bg {
+            position: fixed; inset: 0;
+            background: 
+                linear-gradient(to top, rgba(57, 255, 20, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 50% 50%, #051005 0%, #02050a 100%);
+            z-index: 0;
+        }
+
+        /* --- KHUNG GIẢ LẬP 3D (CONSOLE) --- */
+        .console-container {
+            position: relative;
+            width: 90%; max-width: 350px; height: 450px;
+            margin: 100px auto;
+            perspective: 1000px; /* Tạo môi trường 3D */
+            z-index: 10;
+        }
+
+        .console-box {
+            position: absolute; inset: 0;
+            background: rgba(0, 20, 0, 0.8);
+            border: 1px solid var(--neon-ai);
+            border-radius: 5px;
+            transform: rotateX(10deg); /* Nghiêng tạo chiều sâu */
+            box-shadow: 
+                0 0 20px rgba(57, 255, 20, 0.2),
+                inset 0 0 30px rgba(57, 255, 20, 0.1);
+            overflow: hidden;
+        }
+
+        /* Các đường kẻ không gian bên trong bảng */
+        .console-box::before {
+            content: ''; position: absolute; inset: 0;
+            background-image: 
+                linear-gradient(var(--neon-bg) 1px, transparent 1px),
+                linear-gradient(90deg, var(--neon-bg) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.3;
+        }
+
+        /* Thanh header của bảng */
+        .console-header {
+            background: rgba(57, 255, 20, 0.2);
+            padding: 8px 15px; font-size: 12px;
+            display: flex; justify-content: space-between;
+            border-bottom: 1px solid var(--neon-ai);
+            letter-spacing: 2px;
+        }
+
+        /* --- KHU VỰC VĂN BẢN CHẠY --- */
+        .console-body {
+            padding: 15px; height: 380px;
+            overflow-y: auto; font-size: 13px; line-height: 1.6;
+            text-shadow: 0 0 5px var(--neon-ai);
+            scrollbar-width: none; /* Ẩn scrollbar */
+        }
+        .console-body::-webkit-scrollbar { display: none; }
+
+        .line { margin-bottom: 10px; opacity: 0; animation: fadeIn 0.3s forwards; }
+        .prompt { color: #fff; margin-right: 8px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Hiệu ứng quét dòng (Scanline) */
+        .scanline {
+            position: absolute; width: 100%; height: 2px;
+            background: rgba(57, 255, 20, 0.3);
+            top: 0; left: 0; pointer-events: none;
+            animation: scan 4s linear infinite;
+        }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+        /* Nút Back tròn Neon */
+        .back-circle {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 50px; height: 50px; border: 1px solid var(--neon-ai); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0, 10, 0, 0.6); backdrop-filter: blur(4px);
+            cursor: pointer; z-index: 100; box-shadow: 0 0 10px var(--neon-ai);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="perspective-bg"></div>
+
+    <div class="console-container">
+        <div class="console-box">
+            <div class="scanline"></div>
+            <div class="console-header">
+                <span>AI_CORE_v1.0</span>
+                <span id="status">ANALYZING...</span>
+            </div>
+            <div class="console-body" id="consoleOutput">
+                </div>
+        </div>
+    </div>
+
+    <div class="back-circle" onclick="history.back()">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="var(--neon-ai)" stroke-width="2" fill="none"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </div>
+
+    <script>
+        const output = document.getElementById('consoleOutput');
+        const status = document.getElementById('status');
+
+        const script = [
+            { t: "> INITIALIZING SECURE PROXY...", d: 500 },
+            { t: "> ACCESSING LOCAL_DATABASE.SQL...", d: 800 },
+            { t: "> TARGET: UNUSUAL_SPENDING_PATTERN", d: 400 },
+            { t: "----------------------------------", d: 200 },
+            { t: "[SYSTEM]: Bắt đầu quét dữ liệu 30 ngày qua...", d: 1000 },
+            { t: "[AI]: Phát hiện 02 giao dịch bất thường tại 'Giải trí'.", d: 1200 },
+            { t: "[AI]: Số tiền vượt mức 150% so với trung bình.", d: 800 },
+            { t: "[WARN]: Cảnh báo thâm hụt ngân sách cuối tháng!", d: 600 },
+            { t: "> Đang thiết lập lộ trình tối ưu...", d: 1500 },
+            { t: "[SUCCESS]: Đã hoàn tất báo cáo.", d: 500 }
+        ];
+
+        let lineIdx = 0;
+
+        function printLine() {
+            if (lineIdx < script.length) {
+                const item = script[lineIdx];
+                const div = document.createElement('div');
+                div.className = 'line';
+                div.innerHTML = `<span class="prompt"></span>${item.t}`;
+                output.appendChild(div);
+                
+                // Tự động cuộn xuống đáy
+                output.scrollTop = output.scrollHeight;
+
+                lineIdx++;
+                setTimeout(printLine, item.d);
+            } else {
+                status.innerText = "COMPLETED";
+                status.style.color = "#fff";
+            }
+        }
+
+        // Chạy hiệu ứng sau 1 giây
+        setTimeout(printLine, 1000);
+    </script>
+</body>
+</html>

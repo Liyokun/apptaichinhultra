@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI SCAN - ANOMALY DETECTION</title>
+    <title>AI OPTIMIZER - RESOURCE ALLOCATION</title>
     <style>
-        /* --- 1. CẤU HÌNH GIAO DIỆN --- */
+        /* --- 1. CẤU HÌNH GIAO DIỆN (GIỮ NGUYÊN TỪ LENH01) --- */
         :root {
             --neon: #00f2ff;
             --neon-green: #00ff88;
@@ -250,8 +250,8 @@
             <div class="corner br"></div>
 
             <div class="header">
-                <h1>AI SCANNER V1.0</h1>
-                <div class="status">HỆ THỐNG ĐANG HOẠT ĐỘNG</div>
+                <h1>AI OPTIMIZER V1.0</h1>
+                <div class="status">TỐI ƯU HÓA NGUỒN LỰC</div>
             </div>
 
             <div class="content" id="output"></div>
@@ -263,17 +263,16 @@
     </div>
 
     <script>
-        // --- BỘ THU TÍN HIỆU ĐỔI NỀN (TỪ HOLOGRAM1) ---
+        // --- BỘ THU TÍN HIỆU ĐỔI NỀN (GIỮ NGUYÊN) ---
         window.addEventListener('storage', (e) => {
             if (e.key === 'AURA_COMMAND_BG' && e.newValue) {
                 const targetBg = e.newValue;
                 document.body.style.backgroundImage = `url('./${targetBg}')`;
-                localStorage.setItem('user_lobby_bg', targetBg); // Đồng bộ lại cache cục bộ
+                localStorage.setItem('user_lobby_bg', targetBg);
                 console.log("AI Scanner: Đã đồng bộ nền -> " + targetBg);
             }
         });
 
-        // --- KHỞI TẠO (Ưu tiên lấy nền từ Sảnh) ---
         window.onload = function() {
             const savedBg = localStorage.getItem('user_lobby_bg');
             if (savedBg) {
@@ -281,7 +280,7 @@
             } else {
                 document.body.style.backgroundImage = `url('./farfuture01.png')`;
             }
-            runAnalysis(); // Chạy logic phân tích cũ
+            runAnalysis(); // Kích hoạt lệnh tối ưu
         };
 
         const output = document.getElementById('output');
@@ -302,48 +301,96 @@
             });
         }
 
+        // --- [NEW] LOGIC TỐI ƯU NGÂN SÁCH (LỆNH 03) ---
         async function runAnalysis() {
             await printLine("> Đang kết nối giao thức bảo mật...", "system", 200);
-            await printLine("> Đang truy xuất dữ liệu LocalStorage...", "system", 300);
+            await printLine("> Đang kích hoạt giao thức tối ưu hóa nguồn quỹ [OPTIMIZER]...", "system", 800);
 
+            // 1. LẤY DỮ LIỆU
+            const startDateStr = localStorage.getItem('AURA_START_DATE');
             const rawData = localStorage.getItem('app_data_v4');
             const appData = rawData ? JSON.parse(rawData) : { wallets: [] };
             const wallets = appData.wallets || [];
 
-            if (wallets.length === 0) {
-                await printLine("⚠ LỖI: Dữ liệu trống.", "error", 500);
+            // 2. TÍNH TOÁN TIẾN ĐỘ CHU KỲ (TIME PROGRESS)
+            let timeProgress = 0; // 0.0 -> 1.0 (0% -> 100%)
+            const cycleDays = 30; // Giả định chu kỳ chuẩn 30 ngày
+            
+            if (startDateStr) {
+                const parts = startDateStr.split('/');
+                const startObj = new Date(parts[2], parts[1]-1, parts[0]);
+                const now = new Date();
+                const diffTime = Math.abs(now - startObj);
+                const daysPassed = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                timeProgress = daysPassed / cycleDays;
+            }
+
+            // Tính tổng tiền đã tiêu
+            const totalSpent = wallets.reduce((sum, w) => sum + (w.spent || 0), 0);
+            // Lọc ra các ví có set ngân sách (alloc > 0) để phân tích
+            const activeWallets = wallets.filter(w => w.alloc > 0);
+
+            // 3. GÁC CỔNG DỮ LIỆU (GATEKEEPER)
+            if (totalSpent <= 0 || activeWallets.length < 2) {
+                await printLine("[SYSTEM]: Hệ thống chưa phát hiện biến động dòng tiền hoặc danh sách ví quá ít.", "error", 1500);
+                await printLine("Giao thức tối ưu yêu cầu dữ liệu thực tế từ nhiều nguồn quỹ.", "system", 2000);
                 return;
             }
 
-            await printLine(`> Phát hiện ${wallets.length} thực thể ví.`, "success", 500);
-            await printLine("> Bắt đầu quét lạm chi...", "normal", 800);
+            await printLine(`> Đã quét ${activeWallets.length} thực thể ví khả dụng. Tiến độ chu kỳ: ${(timeProgress*100).toFixed(0)}%`, "normal", 1500);
 
-            let anomalyCount = 0;
-            for (let w of wallets) {
-                if (w.spent > w.alloc) {
-                    anomalyCount++;
-                    const over = (w.spent - w.alloc) * 1000;
-                    await printLine(`⚠ CẢNH BÁO: [${w.name}] lạm chi ${over.toLocaleString()} VNĐ`, "error", 1000);
+            // 4. BỘ LỌC PHÂN TÍCH (FILTERS)
+            let criticalList = []; // Ví nguy cấp
+            let surplusList = [];  // Ví dư thừa
+
+            for (let w of activeWallets) {
+                const ratio = w.spent / w.alloc; // Tỷ lệ sử dụng (vd: 0.8 là 80%)
+                
+                // Lọc Nguy cấp: Tiêu > 80% khi thời gian < 50%
+                if (ratio > 0.8 && timeProgress < 0.5) {
+                    criticalList.push(w);
+                }
+                
+                // Lọc Dư thừa: Tiêu < 10% khi thời gian > 50%
+                if (ratio < 0.1 && timeProgress > 0.5) {
+                    surplusList.push(w);
                 }
             }
 
-            for (let w of wallets) {
-                if (w.spent > 0 && (!w.note || w.note.trim() === "")) {
-                    await printLine(`⚠ LƯU Ý: [${w.name}] đang tiêu không ghi chú. Độ tin cậy: THẤP.`, "system", 1500);
-                }
-            }
+            // 5. KẾT LUẬN & ĐỀ XUẤT
+            if (criticalList.length > 0 && surplusList.length > 0) {
+                // TRƯỜNG HỢP LÝ TƯỞNG: CÓ CẢ THỪA VÀ THIẾU -> ĐIỀU CHUYỂN
+                const source = surplusList[0]; // Lấy ví thừa đầu tiên
+                const target = criticalList[0]; // Lấy ví thiếu đầu tiên
+                
+                // Đề xuất chuyển 20% ngân sách của ví thừa sang ví thiếu
+                const transferAmount = Math.floor(source.alloc * 0.2) * 1000;
 
-            await printLine("----------------------------------------", "system", 1800);
-            
-            if (anomalyCount === 0) {
-                await printLine("HỆ THỐNG ỔN ĐỊNH. Không có lỗi nghiêm trọng.", "success", 2000);
-                await printLine("> Đề xuất: Duy trì tốc độ chi tiêu hiện tại.", "highlight", 2200);
+                await printLine(`> Phát hiện dòng tiền đóng băng tại thực thể [${source.name}]...`, "normal", 2500);
+                await printLine(`⚠ CẢNH BÁO: Thực thể [${target.name}] đang chịu áp lực chi tiêu cực đại.`, "error", 3500);
+                await printLine(`> Lệnh: Điều chuyển ${transferAmount.toLocaleString()} VNĐ từ quỹ [${source.name}] sang [${target.name}] để cân bằng hệ thống.`, "highlight", 4500);
+                await printLine(`Hệ thống đã sẵn sàng cho kịch bản tái phân bổ. Độ an toàn tăng 15%.`, "success", 5500);
+
+            } else if (criticalList.length > 0) {
+                // CHỈ CÓ THIẾU -> CẢNH BÁO
+                const target = criticalList[0];
+                await printLine(`⚠ CẢNH BÁO: Thực thể [${target.name}] sắp vỡ trận (Usage: ${(target.spent/target.alloc*100).toFixed(0)}%).`, "error", 2500);
+                await printLine(`> Không tìm thấy nguồn quỹ dư thừa nào để bù đắp.`, "system", 3500);
+                await printLine(`> Đề xuất: Kích hoạt gói cứu trợ khẩn cấp (Nạp thêm tiền).`, "highlight", 4500);
+
+            } else if (surplusList.length > 0) {
+                // CHỈ CÓ THỪA -> KHEN NGỢI
+                const source = surplusList[0];
+                await printLine(`> Phát hiện dòng tiền nhàn rỗi tại [${source.name}].`, "success", 2500);
+                await printLine(`> Đề xuất: Chuyển phần dư vào quỹ Tiết Kiệm hoặc Đầu Tư.`, "highlight", 3500);
+                
             } else {
-                await printLine(`NGUY HIỂM: Phát hiện ${anomalyCount} bất thường cần xử lý.`, "error", 2000);
-                await printLine("> Đề xuất: Kích hoạt giao thức [Tái Phân Bổ] ngay lập tức.", "highlight", 2200);
+                // KHÔNG CÓ GÌ BẤT THƯỜNG
+                await printLine("HỆ THỐNG CÂN BẰNG. Các dòng tiền di chuyển đúng quỹ đạo.", "success", 2500);
+                await printLine("> Đề xuất: Không cần can thiệp.", "highlight", 3500);
             }
 
-            await printLine("> Đang chờ lệnh người dùng... <span class='cursor'></span>", "normal", 2500);
+            await printLine("> Đang chờ lệnh người dùng... <span class='cursor'></span>", "normal", 6500);
         }
     </script>
 </body>

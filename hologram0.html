@@ -18,20 +18,22 @@
             background: #02050a url('./farfuture01.png') center bottom / cover no-repeat fixed;
             font-family: 'Segoe UI', sans-serif; color: #fff; 
             
-            /* --- CÁC LỆNH KHÓA MÀN HÌNH --- */
-            overflow: hidden !important;      
-            overflow-x: hidden !important;    
-            overflow-y: hidden !important;    
-            position: fixed;                  
-            touch-action: none;               
-            overscroll-behavior: none;        
+            /* --- CÁC LỆNH KHÓA MÀN HÌNH (ĐÃ THÊM) --- */
+            overflow: hidden !important;      /* Cắt bỏ mọi phần dư thừa */
+            overflow-x: hidden !important;    /* Chặn tuyệt đối kéo ngang */
+            overflow-y: hidden !important;    /* Chặn tuyệt đối kéo dọc */
+            position: fixed;                  /* Ghim chặt body, chống kéo lò xo */
+            touch-action: none;               /* Tắt cảm ứng vuốt cuộn */
+            overscroll-behavior: none;        /* Tắt hiệu ứng nảy trang */
             
             transition: background-image 0.5s ease-in-out;
         }
 
+        /* --- BỔ SUNG CSS CHO HIỆU ỨNG NỔ --- */
         #explosion-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 100; 
+            pointer-events: none; 
+            z-index: 100; 
         }
         
         /* --- KHUNG HUD MỚI --- */
@@ -41,7 +43,10 @@
             left: 32%; 
             transform: translateX(-50%); 
             width: 500px; 
+            
+            /* Thêm max-width để đảm bảo không bị bung ngang trên màn hình nhỏ */
             max-width: 100%; 
+            
             height: 200px; 
             z-index: 20;
             pointer-events: none; 
@@ -52,9 +57,10 @@
             filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.2));
         }
 
-        /* Vùng chứa Avatar + Frame (Đã cập nhật logic kiểm tra Profile) */
+        /* Vùng chứa Avatar + Frame (Click để vào Profile) - ĐÃ SỬA ONCLICK */
         #profile-trigger {
             position: absolute;
+            /* Tọa độ tính toán dựa trên Canvas: cx=150, cy=100. Size 100x100 để nằm gọn trong r=60 */
             top: 50px; 
             left: 100px; 
             width: 100px; 
@@ -77,9 +83,11 @@
             z-index: 1;
         }
 
+        /* Container cho Frame (Đè lên ảnh) - ĐÃ SỬA LỖI SIZE */
         #hud-frame-target {
             position: absolute;
             top: 50%; left: 50%;
+            /* Fix lỗi to: Scale nhỏ lại 0.85 và căn giữa tuyệt đối */
             transform: translate(-50%, -50%) scale(0.85); 
             width: 140px; height: 140px;
             pointer-events: none;
@@ -87,6 +95,7 @@
             display: flex; justify-content: center; align-items: center;
         }
 
+        /* Chữ System Core nằm trong thanh HUD */
         .hud-text {
             position: absolute;
             top: 92px;
@@ -119,6 +128,7 @@
             100% { transform: translateY(-20vh) scale(1); opacity: 0; }
         }
 
+        /* Task Wrapper GỐC */
         .task-wrapper {
             position: relative; width: 100%; height: 110px;
             display: flex; align-items: center; justify-content: center;
@@ -151,8 +161,10 @@
         .task-wrapper:hover .label { text-shadow: 0 0 15px var(--neon); }
         .task-wrapper:active .core-beam { stroke: #fff; filter: url(#strongGlow); }
 
+        /* --- PHẦN BỔ SUNG MỚI --- */
+        
         #viewport {
-            width: 100vw; height: 100vh; 
+            width: 100vw; height: 100vh; /* Khóa cứng chiều cao */
             overflow: hidden; position: relative; z-index: 10;
         }
         
@@ -163,7 +175,7 @@
         .page {
             width: 100vw; height: 100%;
             display: flex; flex-direction: column; align-items: center;
-            overflow: hidden; 
+            overflow: hidden; /* Chặn cuộn trang con */
         }
 
         .grid {
@@ -189,7 +201,7 @@
         .btn-left { left: 30px; }
         .btn-right { right: 30px; }
 
-        /* --- CSS CHO POPUP CẢNH BÁO --- */
+        /* --- CSS CHO POPUP CẢNH BÁO (MỚI BỔ SUNG) --- */
         #warningModal {
             display: none; 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -202,8 +214,8 @@
         .modal-box {
             width: 80%; max-width: 320px;
             padding: 25px;
-            border: 1px solid #ff4444; 
-            background: rgba(20, 0, 0, 0.9); 
+            border: 1px solid #ff4444; /* Viền đỏ cảnh báo */
+            background: rgba(20, 0, 0, 0.9); /* Nền đỏ đen */
             box-shadow: 0 0 20px rgba(255, 0, 0, 0.2), inset 0 0 10px rgba(255, 0, 0, 0.1);
             text-align: center;
             position: relative;
@@ -213,7 +225,7 @@
         @keyframes modalPop { to { transform: scale(1); } }
         
         .modal-box h2 {
-            margin: 0 0 15px 0; color: #ff4444; 
+            margin: 0 0 15px 0; color: #ff4444; /* Tiêu đề đỏ */
             font-size: 18px; letter-spacing: 2px; text-transform: uppercase;
             text-shadow: 0 0 10px #ff0000;
             border-bottom: 1px dashed rgba(255, 68, 68, 0.3);
@@ -274,10 +286,13 @@
 
             <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1"><stop offset="10%" stop-color="white" /><stop offset="40%" stop-color="#222" /><stop offset="60%" stop-color="#222" /><stop offset="90%" stop-color="white" /></linearGradient>
             <mask id="mask1"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad1)" /></mask>
+
             <linearGradient id="grad2" x1="1" y1="0" x2="0" y2="1"><stop offset="10%" stop-color="white" /><stop offset="40%" stop-color="#222" /><stop offset="60%" stop-color="#222" /><stop offset="90%" stop-color="white" /></linearGradient>
             <mask id="mask2"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad2)" /></mask>
+
             <linearGradient id="grad3" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stop-color="white" /><stop offset="30%" stop-color="#111" /><stop offset="70%" stop-color="#111" /><stop offset="95%" stop-color="white" /></linearGradient>
             <mask id="mask3"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad3)" /></mask>
+
              <linearGradient id="grad4" x1="0" y1="0" x2="1" y2="0"><stop offset="10%" stop-color="white" /><stop offset="45%" stop-color="#000" /><stop offset="55%" stop-color="#000" /><stop offset="90%" stop-color="white" /></linearGradient>
             <mask id="mask4"><rect x="-100" y="-100" width="500" height="500" fill="url(#grad4)" /></mask>
         </defs>
@@ -293,7 +308,7 @@
                             <path class="beam core-beam" filter="url(#neonGlow)" d="M 15,0 L 185,0 L 200,15 L 200,105 L 185,120 L 15,120 L 0,105 L 0,15 Z" />
                             <path class="beam shell-beam" filter="url(#neonGlow)" mask="url(#mask1)" d="M 15,-12 L 185,-12 L 212,15 L 212,105 L 185,132 L 15,132 L -12,105 L -12,15 Z" />
                         </svg>
-                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><div class="label">NHẬP LIỆU</div></div>
+                        <div class="content"><svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><div class="label">CHI TIÊU</div></div>
                     </div>
 
                     <div class="task-wrapper" onclick="openPortal('budget')">
@@ -561,26 +576,27 @@
         function openPortal(taskName) {
             window.location.href = `./index.html?task=${taskName}`;
         }
-// --- TRẠM ĐIỀU HÀNH BACKGROUND GHI ĐÈ ---
-window.addEventListener('storage', (e) => {
-    if (e.key === 'AURA_COMMAND_BG' && e.newValue) {
-        const targetBg = e.newValue;
-        
-        // 1. Thực hiện đổi nền ngay lập tức
-        document.body.style.backgroundImage = `url('./${targetBg}')`;
-        
-        // 2. Cập nhật chỉ số Index để nút bấm thủ công không bị lệch vòng lặp (Tùy chọn)
-        if (typeof bgFiles !== 'undefined') {
-            const newIndex = bgFiles.indexOf(targetBg);
-            if (newIndex !== -1) bgIndex = newIndex;
-        }
 
-        // 3. Lưu làm nền mặc định bền vững
-        localStorage.setItem('user_lobby_bg', targetBg);
-        
-        console.log("Điều hành: Đã ghi đè nền hệ thống thành -> " + targetBg);
-    }
-});
+        // --- TRẠM ĐIỀU HÀNH BACKGROUND GHI ĐÈ ---
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'AURA_COMMAND_BG' && e.newValue) {
+                const targetBg = e.newValue;
+                
+                // 1. Thực hiện đổi nền ngay lập tức
+                document.body.style.backgroundImage = `url('./${targetBg}')`;
+                
+                // 2. Cập nhật chỉ số Index để nút bấm thủ công không bị lệch vòng lặp (Tùy chọn)
+                if (typeof bgFiles !== 'undefined') {
+                    const newIndex = bgFiles.indexOf(targetBg);
+                    if (newIndex !== -1) bgIndex = newIndex;
+                }
+
+                // 3. Lưu làm nền mặc định bền vững
+                localStorage.setItem('user_lobby_bg', targetBg);
+                
+                console.log("Điều hành: Đã ghi đè nền hệ thống thành -> " + targetBg);
+            }
+        });
 
         // --- HÀM KIỂM TRA QUYỀN HẠN (MỚI BỔ SUNG) ---
         function checkBgAccess() {
@@ -599,10 +615,6 @@ window.addEventListener('storage', (e) => {
             }
         }
 
-        function closeWarningModal() {
-            document.getElementById('warningModal').style.display = 'none';
-        }
-
         // --- HÀM KIỂM TRA TRUY CẬP PROFILE (MỚI BỔ SUNG) ---
         function checkProfileAccess() {
             if (typeof NguoiGacCong !== 'undefined') {
@@ -615,9 +627,12 @@ window.addEventListener('storage', (e) => {
                     window.location.href = 'profilebasic.html';
                 }
             } else {
-                // Mặc định cho level thấp
                 window.location.href = 'profilebasic.html';
             }
+        }
+
+        function closeWarningModal() {
+            document.getElementById('warningModal').style.display = 'none';
         }
 
         // 5. LOAD ẢNH NỀN KHI KHỞI ĐỘNG (Logic cũ)
@@ -634,5 +649,228 @@ window.addEventListener('storage', (e) => {
             loadLobbyAvatar();
         };
     </script>
+    <style>
+    /* 1. NÚT TRIGGER (MŨI TÊN CHỈ LÊN KIỂU PROFILEULTRA) */
+    #task-trigger-container {
+        position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+        z-index: 4000; cursor: pointer; padding: 10px;
+        animation: pulseUp 2s infinite; */
+    pointer-events: auto;
+    }
+    #task-trigger-icon {
+        transform: rotate(-90deg); /* Xoay mũi tên lên */
+        display: inline-block;
+        color: transparent;
+        -webkit-text-stroke: 1.5px var(--neon); /* Viền neon */
+        text-shadow: 0 0 15px var(--neon), 0 0 30px var(--neon);
+        font-size: 35px; font-family: 'Courier New', monospace;
+        font-weight: 100; letter-spacing: -4px;
+        transition: 0.3s;
+    }
+    #task-trigger-container:hover #task-trigger-icon {
+        -webkit-text-stroke: 2.5px var(--neon);
+        text-shadow: 0 0 25px var(--neon), 0 0 50px var(--neon);
+    }
+    @keyframes pulseUp { 
+        0%, 100% { bottom: 5px; opacity: 0.7; } 
+        50% { bottom: 20px; opacity: 1; } 
+    }
+
+    /* 2. OVERLAY & CARD CHÍNH */
+    #task-popup {
+        display: none; position: fixed; inset: 0; z-index: 4001;
+        background: rgba(0, 5, 15, 0.7); backdrop-filter: blur(10px); /* Nền mờ, không đen đặc */
+        align-items: center; justify-content: center;
+    }
+    .task-card {
+        width: 80%; max-width: 450px; /* Chiều rộng 80% */
+        background: rgba(0, 10, 20, 0.85); border: 1px solid var(--neon);
+        border-radius: 12px; padding: 30px 25px; /* Tăng padding */
+        box-shadow: 0 0 40px rgba(0, 242, 255, 0.2), inset 0 0 15px rgba(0, 242, 255, 0.1);
+        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* 3. TASK ITEMS (LỚN HƠN) */
+    .task-item {
+        display: flex; flex-direction: column; gap: 8px;
+        padding: 18px 20px; margin-bottom: 15px; 
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 8px; cursor: pointer; transition: 0.3s;
+    }
+    .task-name { font-weight: bold; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; }
+    .task-desc { font-size: 12px; line-height: 1.5; opacity: 0.8; }
+
+    /* 3 Task đầu: FULL ĐỎ */
+    .task-danger { border-color: rgba(255, 51, 51, 0.5); }
+    .task-danger .task-name { color: #ff3333; text-shadow: 0 0 10px #ff3333; }
+    .task-danger .task-desc { color: #ff9999; }
+    .task-danger:hover { 
+        background: rgba(255, 51, 51, 0.15); border-color: #ff3333; 
+        box-shadow: 0 0 20px rgba(255, 51, 51, 0.4); transform: translateX(5px);
+    }
+
+    /* Task Hộp thư: FULL XANH NEON */
+    .task-mail { border-style: dashed; border-color: rgba(0, 242, 255, 0.6); }
+    .task-mail .task-name { color: var(--neon); text-shadow: 0 0 10px var(--neon); }
+    .task-mail .task-desc { color: rgba(0, 242, 255, 0.8); }
+    .task-mail:hover { 
+        background: rgba(0, 242, 255, 0.15); border-color: var(--neon); 
+        box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); transform: translateX(5px);
+    }
+
+    /* 4. NÚT NEON CHUẨN (CHO ĐÓNG VÀ POPUP) */
+    .neon-btn {
+        background: transparent; padding: 12px 20px; margin-top: 15px; width: 100%;
+        font-family: 'Courier New', monospace; font-weight: bold; font-size: 14px;
+        cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 2px;
+    }
+    .neon-btn-blue { border: 1px solid var(--neon); color: var(--neon); }
+    .neon-btn-blue:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
+    
+    .neon-btn-red { border: 1px solid #ff3333; color: #ff3333; }
+    .neon-btn-red:hover { background: #ff3333; color: #fff; box-shadow: 0 0 15px #ff3333; }
+
+    /* 5. POPUP XÁC NHẬN (ĐỎ) & POPUP THƯ (XANH) */
+    .modal-overlay {
+        display: none; position: fixed; inset: 0; z-index: 4005;
+        background: rgba(0,0,0,0.8); align-items: center; justify-content: center;
+        backdrop-filter: blur(5px);
+    }
+    .modal-box-red {
+        width: 85%; max-width: 320px; background: rgba(15, 0, 0, 0.95); 
+        border: 1px solid #ff3333; padding: 25px; text-align: center; 
+        border-radius: 8px; box-shadow: 0 0 30px rgba(255,51,51,0.3);
+        animation: popIn 0.3s forwards;
+    }
+    .modal-box-blue {
+        width: 85%; max-width: 320px; background: rgba(0, 10, 15, 0.95); 
+        border: 1px dashed var(--neon); padding: 25px; text-align: center; 
+        border-radius: 8px; box-shadow: 0 0 30px rgba(0,242,255,0.2);
+        animation: popIn 0.3s forwards;
+    }
+</style>
+
+<div id="task-trigger-container" onclick="openTaskbar()">
+    <div id="task-trigger-icon">»</div>
+</div>
+
+<div id="task-popup">
+    <div class="task-card">
+        <div style="text-align: center; color: var(--neon); font-size: 12px; font-weight: bold; letter-spacing: 4px; margin-bottom: 25px; opacity: 0.8;">[ SYSTEM TASK MANAGER ]</div>
+
+        <div class="task-item task-danger" onclick="confirmTask('assistant')">
+            <div class="task-name">RESTART ASSISTANT</div>
+            <div class="task-desc">Gửi tín hiệu khởi động lại toàn bộ trợ lý hướng dẫn cho các giao diện.</div>
+        </div>
+
+        <div class="task-item task-danger" onclick="confirmTask('level')">
+            <div class="task-name">RESET AUTHORIZATION</div>
+            <div class="task-desc">Xóa quyền hạn hiện tại, đưa trạng thái hệ thống về INITIATOR.</div>
+        </div>
+
+        <div class="task-item task-danger" onclick="confirmTask('data')">
+            <div class="task-name">WIPE APP DATA</div>
+            <div class="task-desc">Xóa sạch ví và ngân sách.</div>
+        </div>
+
+        <div class="task-item task-mail" onclick="showMailModal()">
+            <div class="task-name">✉ SYSTEM MAILBOX</div>
+            <div class="task-desc">Nhận dữ liệu thông tin và thư từ quản trị viên hệ thống.</div>
+        </div>
+
+        <button class="neon-btn neon-btn-blue" style="margin-top: 25px;" onclick="closeTaskbar()">ĐÓNG BẢNG LỆNH</button>
+    </div>
+</div>
+
+<div id="confirm-overlay" class="modal-overlay">
+    <div class="modal-box-red">
+        <div style="color: #ff3333; font-weight: bold; font-size: 18px; letter-spacing: 2px; margin-bottom: 15px; text-shadow: 0 0 10px #ff3333;">XÁC NHẬN LỆNH</div>
+        <div id="confirm-text" style="color: #ff9999; font-size: 13px; margin-bottom: 25px; line-height: 1.6;"></div>
+        <div style="display: flex; gap: 15px;">
+            <button class="neon-btn neon-btn-blue" style="margin-top: 0;" onclick="hideConfirm()">HỦY</button>
+            <button class="neon-btn neon-btn-red" style="margin-top: 0;" id="exec-btn">THỰC THI</button>
+        </div>
+    </div>
+</div>
+
+<div id="mail-overlay" class="modal-overlay">
+    <div class="modal-box-blue">
+        <div style="color: var(--neon); font-weight: bold; font-size: 18px; letter-spacing: 2px; margin-bottom: 15px; text-shadow: 0 0 10px var(--neon);">✉ INBOX EMPTY</div>
+        <div style="color: rgba(0,242,255,0.8); font-size: 13px; margin-bottom: 25px; line-height: 1.6;">
+            Trạm thư trống. Hiện tại chưa có dữ liệu chỉ thị mới từ hệ thống quản trị AURA.
+        </div>
+        <button class="neon-btn neon-btn-blue" style="margin-top: 0;" onclick="hideMailModal()">ĐÃ RÕ</button>
+    </div>
+</div>
+
+<script>
+    let pendingTask = "";
+
+    function openTaskbar() { document.getElementById('task-popup').style.display = 'flex'; }
+    function closeTaskbar() { document.getElementById('task-popup').style.display = 'none'; }
+
+    // Xử lý Popup Xác Nhận (Đỏ)
+    function confirmTask(type) {
+        pendingTask = type;
+        const overlay = document.getElementById('confirm-overlay');
+        const text = document.getElementById('confirm-text');
+        overlay.style.display = 'flex';
+
+        if(type === 'assistant') text.innerText = "Hệ thống sẽ xóa tín hiệu đã xem hướng dẫn. Bạn sẽ thấy trợ lý ở mọi giao diện trong lần tới. Tiếp tục?";
+        if(type === 'level') text.innerText = "CẢNH BÁO: Giao thức này sẽ hạ cấp quyền hạn của bạn xuống mức thấp nhất (INITIATOR).";
+        if(type === 'data') text.innerText = "CẢNH BÁO NGUY HIỂM: Toàn bộ ngân sách và ví sẽ bị xóa vĩnh viễn. Không thể khôi phục!";
+
+        document.getElementById('exec-btn').onclick = runSystemTask;
+    }
+    function hideConfirm() { document.getElementById('confirm-overlay').style.display = 'none'; }
+
+    // Xử lý Popup Hộp thư (Xanh)
+    function showMailModal() { document.getElementById('mail-overlay').style.display = 'flex'; }
+    function hideMailModal() { document.getElementById('mail-overlay').style.display = 'none'; }
+
+    function runSystemTask() {
+    if (pendingTask === 'assistant') {
+        // --- LỆNH XÓA TỔNG LỰC ---
+        Object.keys(localStorage).forEach(key => {
+            const k = key.toLowerCase();
+            // Xóa tất cả các key có chứa 'tut' (hệ thống mới) hoặc 'visited'/'seen' (hệ thống cũ)
+            if (k.includes('tut') || k.includes('visited') || k.includes('seen')) {
+                localStorage.removeItem(key);
+                console.log("AURA System: Đã reset dữ liệu hướng dẫn -> " + key);
+            }
+        });
+            localStorage.setItem('AURA_FIRST_TIME_SIGNAL', 'true');
+        } 
+        else if (pendingTask === 'level') {
+            localStorage.setItem('AURA_CLEARANCE_LEVEL', 'INITIATOR-0');
+        } 
+        else if (pendingTask === 'data') {
+            const currentLevel = localStorage.getItem('AURA_CLEARANCE_LEVEL');
+            const assistantSignal = localStorage.getItem('AURA_FIRST_TIME_SIGNAL');
+            localStorage.clear(); 
+            if(currentLevel) localStorage.setItem('AURA_CLEARANCE_LEVEL', currentLevel);
+            if(assistantSignal) localStorage.setItem('AURA_FIRST_TIME_SIGNAL', assistantSignal);
+        }
+
+        hideConfirm();
+        closeTaskbar();
+        // Thông báo bằng Mail xanh thay cho alert đen trắng trước khi reload
+        const mailBox = document.querySelector('#mail-overlay .modal-box-blue');
+        mailBox.innerHTML = `
+            <div style="color: var(--neon); font-weight: bold; font-size: 18px; margin-bottom: 15px;">GIAO THỨC HOÀN TẤT</div>
+            <div style="color: rgba(0,242,255,0.8); font-size: 13px; margin-bottom: 25px;">Hệ thống đang khởi động lại...</div>
+        `;
+        document.getElementById('mail-overlay').style.display = 'flex';
+        setTimeout(() => location.reload(), 2000);
+    }
+</script>
+    <script src="aura_assistant.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            initAuraAssistant('lobby_core'); 
+        });
+    </script>
 </body>
 </html>
+

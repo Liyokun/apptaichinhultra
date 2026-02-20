@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AURA TIME CONTROL</title>
+    <style>
+        :root {
+            --neon: #00f2ff;
+            --bg: #000000;
+            --glass: rgba(0, 242, 255, 0.05);
+            --danger: #ff4444;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            height: 100vh; width: 100vw;
+            background-color: var(--bg);
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+            font-family: 'Segoe UI', Courier, monospace;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background-image 1s ease-in-out;
+        }
+
+        /* --- 1. HIỆU ỨNG BỤI --- */
+        .tech-particles {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0;
+            opacity: 0; 
+            transition: opacity 2s ease;
+        }
+        .particle {
+            position: absolute; width: 2px; height: 2px;
+            background: var(--neon); border-radius: 50%;
+            box-shadow: 0 0 4px var(--neon);
+            animation: particle-float 12s ease-in-out infinite;
+        }
+        @keyframes particle-float {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            20% { opacity: 0.8; }
+            80% { opacity: 0.8; }
+            100% { transform: translateY(-100px) translateX(20px); opacity: 0; }
+        }
+
+        /* --- NÚT BACK CHUNG (STYLE ADMIN) --- */
+        .hologram-btn {
+            margin-top: 80px;
+            background: rgba(0, 10, 20, 0.6);
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            padding: 10px 40px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            text-transform: uppercase;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.1);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+        }
+        .hologram-btn:hover {
+            background: rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 20px var(--neon);
+            color: #fff;
+            text-shadow: 0 0 8px #fff;
+        }
+
+        /* --- 2. GIAO DIỆN 1: NÚT NGUỒN (GLASS & SPACIOUS) --- */
+        #phase-1 {
+            z-index: 10;
+            display: flex; flex-direction: column; align-items: center;
+            transition: opacity 0.5s ease;
+        }
+
+        .power-btn {
+            position: relative;
+            width: 240px; height: 240px; /* To hơn chút nữa */
+            border-radius: 50%;
+            
+            /* Viền sáng hơn */
+            border: 2px solid rgba(0, 242, 255, 0.8);
+            box-shadow: 0 0 20px var(--neon), inset 0 0 30px rgba(0, 242, 255, 0.1);
+            
+            /* Lòng kính trong suốt hơn */
+            background: rgba(255, 255, 255, 0.02); 
+            backdrop-filter: blur(3px);
+            
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .power-btn:active { transform: scale(0.95); box-shadow: 0 0 40px var(--neon); }
+
+        .btn-text {
+            position: relative; z-index: 2;
+            font-size: 22px; letter-spacing: 4px;
+            font-family: 'Segoe UI';
+            color: #00f2ff; font-weight: 900;
+            text-shadow: 0 0 10px var(--neon);
+            text-align: center;
+            line-height: 2; /* Tăng khoảng cách dòng chữ trên/dưới */
+        }
+
+        .liquid-fill {
+            position: absolute; bottom: 0; left: 0;
+            width: 100%; height: 0%;
+            background: linear-gradient(0deg, var(--neon), rgba(0, 242, 255, 0.6));
+            box-shadow: 0 0 50px var(--neon);
+            transition: height 4s ease-in-out;
+            z-index: 1;
+        }
+
+        /* --- 3. GIAO DIỆN 2: CARD CẤU HÌNH (FIXED LAYOUT) --- */
+        #phase-2 {
+            display: none; z-index: 10;
+            width: 100%; height: 100%;
+            flex-direction: column; align-items: center; justify-content: center;
+            animation: fadeIn 1s ease;
+        }
+
+        .card-container { display: flex; align-items: center; gap: 10px; position: relative; }
+
+        .nav-arrow {
+            font-size: 45px; color: var(--neon); background: none; border: none;
+            cursor: pointer; opacity: 0.6; transition: 0.3s;
+            text-shadow: 0 0 15px var(--neon);
+            padding: 0 15px;
+            z-index: 20;
+        }
+        .nav-arrow:hover { opacity: 1; transform: scale(1.2); }
+
+        .config-card {
+            width: 260px; /* Thu nhỏ chiều ngang để chừa chỗ cho mũi tên */
+            height: 360px;
+            background: rgba(0, 10, 15, 1);
+            border: 3px solid var(--neon);
+            /* Corner Decoration (Góc vát nhẹ kiểu Sci-fi) */
+            clip-path: polygon(
+                20px 0, 100% 0, 
+                100% calc(100% - 20px), calc(100% - 20px) 100%, 
+                0 100%, 0 20px
+            );
+            box-shadow: 0 0 50px rgba(0, 242, 255, 1);
+            display: none; flex-direction: column;
+            animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(10px);
+        }
+        .config-card.active { display: flex; }
+
+        @keyframes slideIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+        .card-header {
+            height: 100px;
+            display: flex; align-items: center; justify-content: center;
+            border-bottom: 1px solid rgba(0, 242, 255, 0.2);
+            background: linear-gradient(180deg, rgba(0, 242, 255, 0.1), transparent);
+        }
+
+        .card-icon {
+            font-size: 50px; color: #fff;
+            /* Aura Glow bao quanh icon */
+            filter: drop-shadow(0 0 25px var(--neon)); 
+        }
+
+        .card-body {
+            flex: 1; padding: 15px;
+            display: flex; flex-direction: column;
+        }
+
+        /* Khung nội dung bên trong (Inner Frame) */
+        .inner-frame {
+            border: 1px solid rgba(0, 242, 255, 0.4);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            flex-grow: 1;
+            display: flex; flex-direction: column; justify-content: center;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            color: var(--neon); font-size: 16px; font-weight: bold;
+            margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px;
+        }
+        .card-desc { font-size: 12px; line-height: 1.5; color: #00f2ff; font-family: 'Segoe UI', monospace; } 
+
+        /* Nút Kích Hoạt dạng Thanh (Bar Style) */
+        .activate-bar {
+            width: 100%;
+            padding: 12px 0;
+            background: transparent;
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .activate-bar::before {
+            content: ''; position: absolute; top:0; left:0; width: 0%; height: 100%;
+            background: var(--neon); z-index: -1; transition: 0.3s;
+        }
+
+        .activate-bar:hover {
+            color: #000; box-shadow: 0 0 20px var(--neon);
+        }
+        .activate-bar:hover::before { width: 100%; }
+
+        /* --- 4. GIAO DIỆN 3: CORE CLOCK --- */
+        #phase-3 {
+            display: none; z-index: 20;
+            width: 100%; height: 100%;
+            flex-direction: column; align-items: center; justify-content: center;
+            position: relative;
+        }
+
+        .clock-visual {
+            width: 160px; height: 160px;
+            border: 2px solid rgba(0, 242, 255, 0.3);
+            border-radius: 50%;
+            margin-bottom: 30px;
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+        /* Vòng xoay neon */
+        .clock-visual::before {
+            content: ''; position: absolute;
+            width: 100%; height: 100%; border-radius: 50%;
+            border: 2px dashed var(--neon);
+            animation: rotateSlow 20s linear infinite;
+        }
+        .clock-visual svg { width: 80px; height: 80px; fill: var(--neon); filter: drop-shadow(0 0 10px var(--neon)); }
+
+        @keyframes rotateSlow { from {transform: rotate(0deg);} to {transform: rotate(360deg);} }
+
+        .time-big {
+            font-size: 55px; font-weight: bold; color: #fff;
+            text-shadow: 0 0 20px var(--neon);
+            letter-spacing: 4px; font-family: 'Courier New', monospace;
+        }
+        .date-small {
+            font-size: 14px; color: var(--neon);
+            letter-spacing: 3px; margin-top: 5px; text-transform: uppercase;
+        }
+
+        /* Nút Hủy Kích Hoạt (Red Neon Glass Style) */
+        .cancel-dock {
+            position: absolute; top: 30px;
+            background: rgba(20, 0, 0, 0.6);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 10px 30px;
+            /* Style cắt góc giống nút back */
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            font-size: 12px; font-weight: bold; letter-spacing: 1px;
+            cursor: pointer; transition: 0.3s;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.2);
+        }
+        .cancel-dock:hover { 
+            background: var(--danger); color: #000; 
+            box-shadow: 0 0 20px var(--danger); 
+        }
+
+        /* --- POPUP NEON --- */
+        .popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+        .popup-box {
+            width: 300px;
+            background: rgba(0, 15, 20, 0.95);
+            border: 1px solid var(--neon);
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.2), inset 0 0 20px rgba(0, 242, 255, 0.1);
+            padding: 25px; text-align: center;
+            animation: popIn 0.3s ease;
+        }
+        .popup-title { font-size: 18px; font-weight: bold; color: var(--neon); margin-bottom: 15px; letter-spacing: 1px; border-bottom: 1px dashed rgba(0,242,255,0.3); padding-bottom: 10px; }
+        .popup-msg { color: #ccc; font-size: 14px; line-height: 1.5; margin-bottom: 25px; }
+        .popup-actions { display: flex; gap: 15px; justify-content: center; }
+        
+        .popup-btn {
+            flex: 1; padding: 12px; cursor: pointer; font-weight: bold;
+            background: transparent; transition: 0.3s; font-family: inherit;
+            text-transform: uppercase; font-size: 12px;
+        }
+        .popup-btn.confirm { border: 1px solid var(--neon); color: var(--neon); }
+        .popup-btn.confirm:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
+        .popup-btn.cancel { border: 1px solid #ff4444; color: #ff4444; }
+        .popup-btn.cancel:hover { background: #ff4444; color: #000; box-shadow: 0 0 15px #ff4444; }
+
+        @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+
+    </style>
+</head>
+<body>
+
+    <div class="tech-particles" id="particles"></div>
+
+    <div id="phase-1">
+        <div class="power-btn" onclick="startSequence()">
+            <div class="liquid-fill" id="liquid"></div>
+            <div class="btn-text" id="btnText">KHỞI ĐỘNG<br>NGUỒN</div>
+        </div>
+        <button class="hologram-btn" id="backBtn" onclick="window.location.href='hologram1.html'">BACK</button>
+    </div>
+
+    <div id="phase-2">
+        <div style="margin-bottom: 60px; color: var(--neon); font-size: 24px; letter-spacing: 3px; text-shadow: 0 0 30px var(--neon);">THIẾT LẬP CHU KỲ</div>
+        
+        <div class="card-container">
+            <button class="nav-arrow" onclick="switchCard(-1)">&#171;</button>
+            
+            <div class="config-card active" id="card-0">
+                <div class="card-header">
+                    <div class="card-icon">🌏</div>
+                </div>
+                <div class="card-body">
+                    <div class="inner-frame">
+                        <div class="card-title">CHU KỲ NGÀY</div>
+                        <div class="card-desc">Hệ thống tự động quét dữ liệu và kết toán khi qua ngày mới (00:00)<br>Phù hợp cho quản lý chi tiết hằng ngày</div>
+                    </div>
+                    <button class="activate-bar" onclick="askActivation('day')">KÍCH HOẠT</button>
+                </div>
+            </div>
+
+            <div class="config-card" id="card-1">
+                <div class="card-header">
+                    <div class="card-icon">⏳</div>
+                </div>
+                <div class="card-body">
+                    <div class="inner-frame">
+                        <div class="card-title">CHU KỲ TUẦN</div>
+                        <div class="card-desc">Hệ thống tự động kết toán sau mỗi 7 ngày<br>Phù hợp cho ngân sách ngắn hạn</div>
+                    </div>
+                    <button class="activate-bar" onclick="askActivation('week')">KÍCH HOẠT</button>
+                </div>
+            </div>
+
+            <div class="config-card" id="card-2">
+                <div class="card-header">
+                    <div class="card-icon">📅</div>
+                </div>
+                <div class="card-body">
+                    <div class="inner-frame">
+                        <div class="card-title">CHU KỲ THÁNG</div>
+                        <div class="card-desc">Hệ thống tự động kết toán khi chuyển sang tháng mới<br>Phù hợp cho quản lý lương</div>
+                    </div>
+                    <button class="activate-bar" onclick="askActivation('month')">KÍCH HOẠT</button>
+                </div>
+            </div>
+
+            <div class="config-card" id="card-3">
+                <div class="card-header">
+                    <div class="card-icon">🌕</div>
+                </div>
+                <div class="card-body">
+                    <div class="inner-frame">
+                        <div class="card-title">CHU KỲ 30 NGÀY</div>
+                        <div class="card-desc">Hệ thống tự động kết toán sau mỗi 30 ngày<br>Phù hợp cho ngân sách dài hạn</div>
+                    </div>
+                    <button class="activate-bar" onclick="askActivation('cycle30')">KÍCH HOẠT</button>
+                </div>
+            </div>
+
+            <button class="nav-arrow" onclick="switchCard(1)">&#187;</button>
+        </div>
+    </div>
+
+    <div id="phase-3">
+        <div class="cancel-dock" onclick="deactivateSystem()">[ HỦY TỰ ĐỘNG ]</div>
+        
+        <div class="clock-visual">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></svg>
+        </div>
+
+        <div class="core-clock">
+            <div class="time-big" id="realTime">00:00:00</div>
+            <div class="date-small" id="realDate">SYNCING DATA...</div>
+        </div>
+        
+        <button class="hologram-btn" style="margin-top: 120px;" onclick="window.location.href='hologram1.html'">BACK</button>
+    </div>
+
+    <div class="popup-overlay" id="confirmModal">
+        <div class="popup-box">
+            <div class="popup-title">XÁC NHẬN</div>
+            <div class="popup-msg" id="confirmMsg">Kích hoạt chế độ này?</div>
+            <div class="popup-actions">
+                <button class="popup-btn cancel" onclick="closeConfirm()">HỦY BỎ</button>
+                <button class="popup-btn confirm" id="btnConfirmAction">ĐỒNG Ý</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- BỤI CÔNG NGHỆ ---
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 100; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.animationDelay = (Math.random() * 12) -5 + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // --- QUẢN LÝ TRẠNG THÁI ---
+        let currentCard = 0;
+        const totalCards = 4;
+
+        function checkStatus() {
+            const status = localStorage.getItem('AURA_TIME_STATUS');
+            if (status === 'ACTIVE') {
+                document.getElementById('phase-1').style.display = 'none';
+                document.getElementById('phase-2').style.display = 'none';
+                enterPhase3();
+            }
+        }
+
+        function startSequence() {
+            document.getElementById('backBtn').style.opacity = '0';
+            document.getElementById('backBtn').style.pointerEvents = 'none';
+            document.getElementById('liquid').style.height = '100%';
+            document.getElementById('particles').style.opacity = '1';
+            document.getElementById('btnText').innerHTML = "LOADING...";
+
+            setTimeout(() => {
+                document.getElementById('phase-1').style.display = 'none';
+                document.getElementById('phase-2').style.display = 'flex';
+            }, 3500);
+        }
+
+        function switchCard(dir) {
+            document.getElementById(`card-${currentCard}`).classList.remove('active');
+            currentCard += dir;
+            if (currentCard < 0) currentCard = totalCards - 1;
+            if (currentCard >= totalCards) currentCard = 0;
+            document.getElementById(`card-${currentCard}`).classList.add('active');
+        }
+
+        // --- HỆ THỐNG POPUP ---
+        let pendingMode = null;
+
+        function askActivation(mode) {
+            pendingMode = mode;
+            let text = "";
+            if(mode === 'day') text = "Kích hoạt CHU KỲ NGÀY?";
+            if(mode === 'week') text = "Kích hoạt CHU KỲ TUẦN (7 Ngày)?";
+            if(mode === 'month') text = "Kích hoạt CHU KỲ THÁNG?";
+            if(mode === 'cycle30') text = "Kích hoạt CHU KỲ 30 NGÀY?";
+            
+            document.getElementById('confirmMsg').innerText = text;
+            document.getElementById('confirmModal').style.display = 'flex';
+            
+            document.getElementById('btnConfirmAction').onclick = function() {
+                confirmActivation();
+            };
+        }
+
+        function closeConfirm() {
+            document.getElementById('confirmModal').style.display = 'none';
+            pendingMode = null;
+        }
+
+        // [UPDATE] Hàm Kích hoạt: Ghi 3 giá trị (Status, Mode, Time) vào Local
+        function confirmActivation() {
+            if(!pendingMode) return;
+            
+            // 1. Lưu trạng thái kích hoạt
+            localStorage.setItem('AURA_TIME_STATUS', 'ACTIVE');
+            
+            // 2. Lưu chế độ (day/week/month/cycle30) mà user chọn
+            localStorage.setItem('AURA_TIME_MODE', pendingMode);
+            
+            // 3. Lưu mốc thời gian bắt đầu
+            localStorage.setItem('AURA_LAST_SYNC', new Date().toISOString());
+
+            closeConfirm();
+            document.getElementById('phase-2').style.display = 'none';
+            enterPhase3();
+        }
+
+        function enterPhase3() {
+            const p3 = document.getElementById('phase-3');
+            p3.style.display = 'flex';
+            p3.style.animation = 'fadeIn 2s ease';
+            document.body.style.backgroundImage = "url('verify6.jpg')";
+            document.getElementById('particles').style.opacity = '1';
+            startClock();
+        }
+
+        // [UPDATE] Hàm Hủy: Xóa sạch 3 giá trị + các lệnh chờ
+        function deactivateSystem() {
+            document.getElementById('confirmMsg').innerText = "Hủy bỏ chế độ tự động và quay về mặc định?";
+            document.getElementById('confirmModal').style.display = 'flex';
+            
+            document.getElementById('btnConfirmAction').onclick = function() {
+                // Xóa sạch mọi dấu vết
+                localStorage.removeItem('AURA_TIME_STATUS');
+                localStorage.removeItem('AURA_TIME_MODE');
+                localStorage.removeItem('AURA_LAST_SYNC');
+                
+                // Xóa cả tín hiệu chờ (đề phòng trường hợp đang có lệnh chưa xử lý)
+                localStorage.removeItem('AURA_SIGNAL'); 
+                localStorage.removeItem('AURA_CYCLE_INFO');
+
+                location.reload();
+            };
+        }
+
+        function startClock() {
+            setInterval(() => {
+                const now = new Date();
+                const h = now.getHours().toString().padStart(2,'0');
+                const m = now.getMinutes().toString().padStart(2,'0');
+                const s = now.getSeconds().toString().padStart(2,'0');
+                document.getElementById('realTime').innerText = `${h}:${m}:${s}`;
+
+                const day = now.getDate().toString().padStart(2,'0');
+                const month = (now.getMonth() + 1).toString().padStart(2,'0');
+                const year = now.getFullYear();
+                document.getElementById('realDate').innerText = `DATE: ${day} / ${month} / ${year}`;
+            }, 1000);
+        }
+
+        checkStatus();
+    </script>
+</body>
+</html>

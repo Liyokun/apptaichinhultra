@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AURA WISH PROTOCOL</title>
+    <style>
+        :root {
+            --neon: #00f2ff; /* [FIX] Trả về màu xanh gốc */
+            --bg: #000000;
+            --danger: #ff3333;
+            --success: #00ff88;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            height: 100vh; width: 100vw;
+            background-color: var(--bg);
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+            font-family: 'Segoe UI', Courier, monospace;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background 1s ease;
+        }
+
+        /* --- CANVAS SAO BĂNG --- */
+        #meteor-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1; opacity: 0; transition: opacity 2s;
+        }
+
+        /* --- NÚT BACK CHUNG --- */
+        .btn-back-system {
+            position: absolute; bottom: 30px;
+            padding: 10px 40px;
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            cursor: pointer;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            z-index: 50; transition: 0.3s;
+        }
+        .btn-back-system:hover { background: var(--neon); color: #000; box-shadow: 0 0 20px var(--neon); }
+
+        /* =========================================
+           PHASE 1: KHỞI TẠO (THE RITUAL)
+           ========================================= */
+        #phase-setup {
+            display: none; /* Mặc định ẩn để JS xử lý */
+            z-index: 10; width: 100%; height: 100%;
+            flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s;
+        }
+
+        .ritual-star-container {
+            position: relative;
+            width: 250px; height: 250px;
+            display: flex; justify-content: center; align-items: center;
+            animation: float 4s ease-in-out infinite;
+            cursor: pointer;
+        }
+
+        /* SVG Star Setup */
+        .neon-star-svg {
+            width: 100%; height: 100%;
+            fill: none; stroke: var(--neon); /* [FIX] Màu xanh */
+            stroke-width: 3; 
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 10px var(--neon));
+            transition: 0.3s;
+        }
+        .ritual-star-container:hover .neon-star-svg {
+            filter: drop-shadow(0 0 30px var(--neon));
+            transform: scale(1.05);
+            stroke: #fff;
+        }
+
+        .star-label {
+            position: absolute;
+            color: var(--neon); /* [FIX] Màu xanh */
+            font-size: 16px; letter-spacing: 3px;
+            text-align: center;
+            font-weight: 900;
+            text-shadow: 0 0 10px var(--neon);
+            pointer-events: none;
+        }
+
+        @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-15px);} }
+
+        /* =========================================
+           PHASE 2: HÀNH TRÌNH (THE JOURNEY)
+           ========================================= */
+        #phase-active {
+            display: none; z-index: 20;
+            width: 100%; height: 100%;
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            position: relative;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        .top-bar {
+            position: absolute; top: 40px; width: 100%;
+            display: flex; justify-content: center; z-index: 50;
+        }
+        .cancel-wish-btn {
+            background: rgba(10, 0, 0, 0.6); border: 1px solid var(--danger);
+            color: var(--danger); padding: 10px 25px;
+            font-size: 11px; letter-spacing: 2px; cursor: pointer;
+            backdrop-filter: blur(4px); transition: 0.3s;
+            text-transform: uppercase; font-weight: bold;
+        }
+        .cancel-wish-btn:hover { background: var(--danger); color: #fff; box-shadow: 0 0 20px var(--danger); }
+
+        .central-hub {
+            position: relative;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 20px;
+            transform: translateY(-20px);
+        }
+
+        .timer-display { text-align: center; z-index: 5; margin-bottom: -10px; }
+        .timer-digits {
+            font-size: 26px; color: #fff; font-weight: bold;
+            text-shadow: 0 0 15px var(--neon); font-family: 'Courier New', monospace; letter-spacing: 2px;
+        }
+        .timer-label { font-size: 10px; color: rgba(255,255,255,0.6); letter-spacing: 2px; margin-top: 5px; }
+
+        .liquid-star-wrapper {
+            position: relative; width: 280px; height: 280px;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* SVG STAR SYSTEM UI 2 */
+        .star-mask-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        
+        /* [FIX] Chất lỏng trong suốt hơn */
+        .liquid-rect {
+            fill: url(#liquidGradient);
+            transition: y 1.5s ease-in-out, height 1.5s ease-in-out;
+            opacity: 0.9; 
+        }
+
+        .star-border-overlay {
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0;
+            z-index: 10; pointer-events: none; filter: drop-shadow(0 0 10px var(--neon));
+        }
+
+        .percent-center {
+            position: absolute; font-size: 32px; font-weight: 900; color: #fff;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8), 0 0 20px var(--neon);
+            z-index: 15; pointer-events: none;
+        }
+
+        .name-display { text-align: center; margin-top: -10px; z-index: 5; }
+        .name-text {
+            font-size: 18px; color: var(--neon); letter-spacing: 3px;
+            text-transform: uppercase; font-weight: bold;
+            text-shadow: 0 0 10px var(--neon);
+            border-top: 1px solid rgba(0, 242, 255, 0.3); padding-top: 10px;
+        }
+
+        /* =========================================
+           POPUPS
+           ========================================= */
+        .popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center; z-index: 100;
+        }
+
+        .neon-modal {
+            width: 320px; background: rgba(0, 10, 15, 0.95); 
+            border: 1px solid var(--neon);
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.15); padding: 2px;
+            clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+            animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-content {
+            background: radial-gradient(circle at center, rgba(0, 242, 255, 0.05), transparent);
+            padding: 25px; text-align: center; display: flex; flex-direction: column; gap: 15px;
+        }
+
+        .modal-title {
+            color: var(--neon); font-size: 18px; font-weight: bold; letter-spacing: 2px;
+            border-bottom: 1px dashed rgba(0, 242, 255, 0.3); padding-bottom: 10px; margin-bottom: 5px;
+        }
+        
+        .modal-msg { font-size: 13px; color: #ccc; line-height: 1.5; font-family: 'Courier New', monospace; }
+
+        .input-group label { display: block; font-size: 10px; color: #888; margin-bottom: 5px; text-align: left; }
+        .sci-input {
+            width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(0, 242, 255, 0.3); color: #fff; padding: 10px;
+            font-family: 'Courier New', monospace; text-align: center; outline: none; transition: 0.3s;
+        }
+        .sci-input:focus { border-color: var(--neon); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2); }
+        .sci-input.error { border-color: var(--danger); animation: shake 0.3s; }
+
+        .modal-actions { display: flex; gap: 10px; margin-top: 10px; }
+        .sci-btn {
+            flex: 1; padding: 10px; cursor: pointer; font-size: 12px; font-weight: bold;
+            background: transparent; border: 1px solid var(--neon); color: var(--neon);
+            transition: 0.3s; text-transform: uppercase;
+        }
+        .sci-btn:hover { background: var(--neon); color: #000; box-shadow: 0 0 15px var(--neon); }
+        .sci-btn.danger { border-color: var(--danger); color: var(--danger); }
+        .sci-btn.danger:hover { background: var(--danger); color: #fff; box-shadow: 0 0 15px var(--danger); }
+
+        @keyframes zoomIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+
+        svg defs stop { transition: stop-color 0.5s; }
+    </style>
+</head>
+<body>
+
+    <canvas id="meteor-canvas"></canvas>
+
+    <div id="phase-setup">
+        <div class="ritual-star-container" onclick="openModal('setupModal')">
+            <svg class="neon-star-svg" viewBox="0 0 100 100">
+                <path d="M50 5 L63 35 L95 38 L71 60 L78 92 L50 75 L22 92 L29 60 L5 38 L37 35 Z" 
+                      stroke-linejoin="round" stroke-linecap="round" />
+            </svg>
+            <div class="star-label">ƯỚC <br> NGUYỆN</div>
+        </div>
+        <div style="margin-top: 25px; color: #666; font-size: 12px; letter-spacing: 2px; animation: pulse 2s infinite;">CHẠM ĐỂ KÍCH HOẠT</div>
+        <button class="btn-back-system" onclick="window.location.href='hologram1.html'">BACK</button>
+    </div>
+
+    <div id="phase-active">
+        <div class="top-bar">
+            <button class="cancel-wish-btn" onclick="requestCancelWish()">HỦY ƯỚC NGUYỆN</button>
+        </div>
+
+        <div class="central-hub">
+            <div class="timer-display">
+                <div class="timer-digits" id="displayTimer">00 : 00</div>
+                <div class="timer-label">THỜI GIAN CÒN LẠI</div>
+            </div>
+
+            <div class="liquid-star-wrapper" id="starWrapper">
+                <svg width="100%" height="100%" viewBox="0 0 100 100">
+                    <defs>
+                        <path id="roundedStarPath" d="M50 5 L63 35 L95 38 L71 60 L78 92 L50 75 L22 92 L29 60 L5 38 L37 35 Z" stroke-linejoin="round" stroke-width="3" />
+                        <clipPath id="starClip"><use href="#roundedStarPath" /></clipPath>
+                        
+                        <linearGradient id="liquidGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                            <stop offset="0%" stop-color="#00f2ff" stop-opacity="0.8"/>
+                            <stop offset="100%" stop-color="#0088ff" stop-opacity="0.5"/>
+                        </linearGradient>
+                    </defs>
+                    <use href="#roundedStarPath" fill="rgba(255,255,255,0.05)" stroke="none" />
+                    <rect id="liquidRect" x="0" y="100" width="100" height="0" fill="url(#liquidGradient)" clip-path="url(#starClip)" />
+                    <use href="#roundedStarPath" fill="none" stroke="#00f2ff" stroke-width="2" stroke-linejoin="round" filter="drop-shadow(0 0 5px #00f2ff)" />
+                </svg>
+                <div class="percent-center" id="displayPercent">0%</div>
+            </div>
+
+            <div class="name-display">
+                <div class="name-text" id="displayName">TARGET NAME</div>
+            </div>
+        </div> 
+        <button class="btn-back-system" onclick="window.location.href='hologram1.html'">BACK</button>
+    </div>
+
+    <div class="popup-overlay" id="setupModal">
+        <div class="neon-modal">
+            <div class="modal-content">
+                <div class="modal-title">THIẾT LẬP MỤC TIÊU</div>
+                <div class="input-group">
+                    <label>TÊN ƯỚC NGUYỆN</label>
+                    <input type="text" class="sci-input" id="inpName" placeholder="VD: Mua Laptop...">
+                </div>
+                <div class="input-group">
+                    <label>THỜI GIAN (NGÀY)</label>
+                    <input type="text" inputmode="numeric" class="sci-input" id="inpDays" placeholder="VD: 30">
+                </div>
+                <div class="input-group">
+                    <label>SỐ TIỀN CẦN (ĐƠN VỊ K)</label>
+                    <input type="text" inputmode="numeric" class="sci-input" id="inpMoney" placeholder="Nhập 5 = 5000VND">
+                </div>
+                <div class="modal-actions">
+                    <button class="sci-btn danger" onclick="closeModal('setupModal')">HỦY BỎ</button>
+                    <button class="sci-btn" onclick="startWish()">XÁC NHẬN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="popup-overlay" id="cancelModal">
+        <div class="neon-modal">
+            <div class="modal-content">
+                <div class="modal-title" style="color: var(--danger); border-color: rgba(255,51,51,0.3);">CẢNH BÁO HỦY BỎ</div>
+                <div class="modal-msg">Bạn có chắc chắn muốn hủy bỏ ước nguyện này?<br>Mọi tiến độ sẽ bị xóa vĩnh viễn.</div>
+                <div class="modal-actions">
+                    <button class="sci-btn" onclick="closeModal('cancelModal')">QUAY LẠI</button>
+                    <button class="sci-btn danger" onclick="confirmCancelAction()">XÁC NHẬN HỦY</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="popup-overlay" id="resultModal" style="z-index: 200;">
+        <div class="neon-modal">
+            <div class="modal-content">
+                <div class="modal-title" id="resTitle">KẾT QUẢ</div>
+                <div style="font-size: 40px;" id="resIcon">🏆</div>
+                <div class="modal-msg" id="resMsg">Nội dung...</div>
+                <div class="modal-actions">
+                    <button class="sci-btn" onclick="resetAndExit()">ĐÃ HIỂU</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'AURA_WISH_DATA'; 
+        
+        window.onload = function() {
+            initMeteorShower();
+            checkWishStatus();
+        };
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        // --- 1. START WISH ---
+        function startWish() {
+            const name = document.getElementById('inpName').value.trim();
+            const days = document.getElementById('inpDays').value.trim();
+            let money = document.getElementById('inpMoney').value.trim(); 
+
+            if(!name || !days || isNaN(days) || !money || isNaN(money)) {
+                alert("Vui lòng nhập đúng dữ liệu!"); return; 
+            }
+
+            let targetVal = parseFloat(money);
+            targetVal = targetVal * 1000; // [LOGIC] Đơn vị K -> Nhân 1000
+
+            const currentTotal = calculateTotalSavingsFromHistory();
+            
+            const data = {
+                name: name,
+                targetDays: parseInt(days),
+                targetMoney: targetVal,
+                startTime: new Date().getTime(),
+                baseBalance: currentTotal,
+                status: 'ACTIVE',
+                isNew: true // Cờ đánh dấu lần đầu
+            };
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            closeModal('setupModal');
+            activateJourney(true); // true = Lần đầu tiên
+        }
+
+        // --- 2. CHECK STATUS (FIX LOGIC 5 GIÂY) ---
+        function checkWishStatus() {
+            const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            const setupPhase = document.getElementById('phase-setup');
+
+            if(data && data.status === 'ACTIVE') {
+                if (data.isNew) {
+                    // Nếu là lần đầu tiên: Chạy hiệu ứng 5s
+                    activateJourney(true);
+                    
+                    // Tắt cờ ngay lập tức sau khi kích hoạt
+                    data.isNew = false;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                } else {
+                    // Nếu là lần sau: Vào ngay lập tức (False)
+                    activateJourney(false);
+                }
+            } else {
+                setupPhase.style.display = 'flex'; 
+            }
+        }
+
+        // --- 3. ACTIVATE JOURNEY (FIX HIỂN THỊ) ---
+        function activateJourney(isFirstTime) {
+            const activePhase = document.getElementById('phase-active');
+            const bg = document.body;
+            const meteor = document.getElementById('meteor-canvas');
+
+            document.getElementById('phase-setup').style.display = 'none';
+
+            bg.style.backgroundImage = "url('starcity.jpg')";
+            bg.style.backgroundColor = "#050510"; 
+            meteor.style.opacity = '1'; 
+            activePhase.style.display = 'flex'; 
+
+            if (isFirstTime) {
+                // Lần đầu: Chờ 5s để ngắm cảnh
+                setTimeout(() => {
+                    activePhase.style.opacity = '1';
+                    startCoreEngine();
+                }, 5000); 
+            } else {
+                // Lần sau: Hiện NGAY LẬP TỨC (Không delay)
+                activePhase.style.opacity = '1'; 
+                startCoreEngine();
+            }
+        }
+
+        // --- 4. DATA ENGINE ---
+        let engineInterval;
+        function startCoreEngine() {
+            updateEngine();
+            engineInterval = setInterval(updateEngine, 1000);
+        }
+
+        function updateEngine() {
+            const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            if(!data) return;
+
+            const now = new Date().getTime();
+            const endTime = data.startTime + (data.targetDays * 24 * 60 * 60 * 1000);
+            const timeLeft = endTime - now;
+
+            if(timeLeft <= 0) { checkResult(data, true); return; }
+
+            const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            document.getElementById('displayTimer').innerText = `${daysLeft} Ngày : ${hoursLeft} Giờ`;
+
+            const currentTotal = calculateTotalSavingsFromHistory();
+            const savedAmount = currentTotal - data.baseBalance; 
+            
+            let progress = 0;
+            if(savedAmount > 0) progress = (savedAmount / data.targetMoney) * 100;
+            if(progress >= 100) { progress = 100; checkResult(data, false); }
+
+            const liquidRect = document.getElementById('liquidRect');
+            liquidRect.setAttribute('y', 100 - progress);
+            liquidRect.setAttribute('height', progress);
+            document.getElementById('displayPercent').innerText = `${progress.toFixed(1)}%`;
+            document.getElementById('displayName').innerText = data.name;
+        }
+
+        // --- KẾT NỐI DỮ LIỆU ---
+        function calculateTotalSavingsFromHistory() {
+            const rawData = localStorage.getItem('app_data_v4');
+            let currentBalance = 0;
+            if (rawData) {
+                const appData = JSON.parse(rawData);
+                const totalBudget = (appData.totalBudget || 0) * 1000;
+                const totalSpent = appData.wallets.reduce((sum, w) => sum + (w.spent || 0), 0) * 1000;
+                currentBalance = totalBudget - totalSpent;
+            }
+
+            const rawHistory = localStorage.getItem('hist_v3');
+            let historySavings = 0;
+            if (rawHistory) {
+                const history = JSON.parse(rawHistory);
+                historySavings = history.reduce((sum, record) => sum + (record.balance || 0), 0);
+            }
+
+            return currentBalance + historySavings;
+        }
+
+        // --- CÁC HÀM PHỤ TRỢ ---
+        function checkResult(data, isExpired) {
+            clearInterval(engineInterval);
+            const title = document.getElementById('resTitle');
+            const icon = document.getElementById('resIcon');
+            const msg = document.getElementById('resMsg');
+            openModal('resultModal');
+
+            const currentTotal = calculateTotalSavingsFromHistory();
+            const savedAmount = currentTotal - data.baseBalance;
+            const isSuccess = savedAmount >= data.targetMoney;
+
+            if(isSuccess) {
+                title.style.color = 'var(--success)'; title.innerText = "NHIỆM VỤ HOÀN THÀNH";
+                icon.innerText = '🏆'; msg.innerText = `CHÚC MỪNG!\nBạn đã chinh phục mục tiêu "${data.name}" thành công!`;
+            } else {
+                if(isExpired) {
+                    title.style.color = 'var(--danger)'; title.innerText = "NHIỆM VỤ THẤT BẠI";
+                    icon.innerText = '⚠️'; msg.innerText = `RẤT TIẾC!\nThời gian đã hết nhưng mục tiêu chưa đạt được.`;
+                }
+            }
+        }
+
+        function requestCancelWish() { openModal('cancelModal'); }
+        function confirmCancelAction() { resetAndExit(); }
+        function resetAndExit() {
+            localStorage.removeItem(STORAGE_KEY);
+            window.location.href = 'hologram1.html';
+        }
+
+        // --- METEOR ENGINE ---
+        function initMeteorShower() {
+            const canvas = document.getElementById('meteor-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            let meteors = [];
+            
+            class Meteor {
+                constructor() { this.reset(); }
+                reset() {
+                    if(Math.random() > 0.5) { this.x = Math.random() * canvas.width; this.y = -100; } 
+                    else { this.x = -100; this.y = Math.random() * canvas.height; }
+                    
+                    this.len = Math.random() * 50 + 10;
+                    this.speed = Math.random() * 3 + 2; 
+                    this.size = Math.random() * 1.5 + 0.5;
+                    this.angle = Math.PI / 4; 
+                }
+                update() {
+                    this.x += this.speed;
+                    this.y += this.speed;
+                    if (this.x > canvas.width + 100 || this.y > canvas.height + 100) this.reset();
+                }
+                draw() {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.angle);
+                    const gradient = ctx.createLinearGradient(0, 0, this.len, 0);
+                    gradient.addColorStop(1, "rgba(255,255,255,0.8)");
+                    gradient.addColorStop(0, "rgba(0,0,0,0)");
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, this.len, this.size);
+                    ctx.restore();
+                }
+            }
+
+            for(let i=0; i<30; i++) meteors.push(new Meteor());
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                meteors.forEach(m => { m.update(); m.draw(); });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+    </script>
+</body>
+</html>

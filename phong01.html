@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>360 Environmental Room</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; touch-action: none; }
+        #joystick-zone {
+            position: absolute; bottom: 50px; left: 50px;
+            width: 120px; height: 120px; z-index: 100;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="joystick-zone"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- 1. KHỞI TẠO ENGINE ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        // Đặt camera cao hơn tâm (1.6m - tầm mắt người) để tránh cảm giác lơ lửng
+        camera.position.set(0, 1.6, 0); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // --- 2. LẮP PHÔNG NỀN 360 (PHONG01.WEBP) ---
+        const loader = new THREE.TextureLoader();
+        loader.load('phong01.webp', (texture) => {
+            texture.colorSpace = THREE.SRGBColorSpace;
+            
+            // Tạo khối cầu phông nền
+            const geometry = new THREE.SphereGeometry(50, 60, 40);
+            
+            // Kỹ thuật bóp méo nhẹ: Nén nhẹ trục Y để sàn nhà phẳng hơn một chút
+            geometry.scale(1, 0.95, 1); 
+
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.BackSide // Nhìn từ bên trong khối cầu
+            });
+            
+            const skybox = new THREE.Mesh(geometry, material);
+            scene.add(skybox);
+        });
+
+        // --- 3. GIỮ LẠI CÁC CỘT ĐỂ LÀM ĐIỂM TỰA KHÔNG GIAN ---
+        // (Bạn có thể xóa phần này nếu muốn phòng trống hoàn toàn)
+        function addPillar(x, z, color, h) {
+            const geo = new THREE.BoxGeometry(0.5, h, 0.5);
+            const mat = new THREE.MeshBasicMaterial({ color: color, wireframe: true, transparent: true, opacity: 0.3 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, h/2, z);
+            scene.add(mesh);
+        }
+        addPillar(-5, -5, 0x00f2ff, 3);
+        addPillar(5, -5, 0xff0055, 3);
+
+        // --- 4. HỆ THỐNG ĐIỀU KHIỂN ---
+        let moveState = { f: 0, r: 0 };
+        let look = { lat: 0, lon: -90 };
+        let interact = false;
+        let px, py, plon, plat;
+
+        const joy = nipplejs.create({ 
+            zone: document.getElementById('joystick-zone'), 
+            mode: 'static', 
+            position: {left: '60px', bottom: '60px'}, 
+            color: 'white' 
+        });
+
+        joy.on('move', (e, d) => { moveState.f = d.vector.y; moveState.r = d.vector.x; });
+        joy.on('end', () => { moveState = { f: 0, r: 0 }; });
+
+        document.addEventListener('pointerdown', e => { 
+            if(e.clientX > 200) { 
+                interact = true; px = e.clientX; py = e.clientY; plon = look.lon; plat = look.lat; 
+            }
+        });
+        document.addEventListener('pointermove', e => {
+            if (interact) {
+                look.lon = (px - e.clientX) * 0.2 + plon;
+                look.lat = (e.clientY - py) * 0.2 + plat;
+            }
+        });
+        document.addEventListener('pointerup', () => interact = false);
+
+        // --- 5. VÒNG LẶP RENDER ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = clock.getDelta();
+
+            // Giới hạn góc nhìn lên/xuống
+            look.lat = Math.max(-85, Math.min(85, look.lat));
+            const phi = THREE.MathUtils.degToRad(90 - look.lat);
+            const theta = THREE.MathUtils.degToRad(look.lon);
+            
+            const target = new THREE.Vector3().setFromSphericalCoords(1, phi, theta).add(camera.position);
+            camera.lookAt(target);
+
+            // Di chuyển camera
+            if (moveState.f !== 0 || moveState.r !== 0) {
+                const speed = 4 * dt;
+                const dir = new THREE.Vector3();
+                camera.getWorldDirection(dir);
+                dir.y = 0; dir.normalize();
+                const side = new THREE.Vector3().crossVectors(camera.up, dir).normalize();
+
+                camera.position.addScaledVector(dir, moveState.f * speed);
+                camera.position.addScaledVector(side, -moveState.r * speed);
+            }
+
+            // Giới hạn di chuyển trong phạm vi phòng (giả định 15m)
+            const lim = 15;
+            camera.position.x = Math.max(-lim, Math.min(lim, camera.position.x));
+            camera.position.z = Math.max(-lim, Math.min(lim, camera.position.z));
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

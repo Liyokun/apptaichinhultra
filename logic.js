@@ -1,15 +1,71 @@
 /* =================================================================
    FILE LOGIC: HỆ THỐNG VÍ ĐỘNG (DYNAMIC WALLET SYSTEM) - FIX FULL
+   [UPDATED V9.0: AUTO TIME CONTROL SECURITY & NEON POPUPS]
    ================================================================= */
 
+// --- 0. HÀM HỖ TRỢ POPUP NEON (THAY THẾ ALERT/CONFIRM CŨ) ---
+// Tự động chèn HTML Popup vào body nếu chưa có
+(function initPopupUI() {
+    if (!document.getElementById('neon-popup-overlay')) {
+        const popupHTML = `
+            <div id="neon-popup-overlay" class="neon-popup-overlay" style="display:none;">
+                <div class="neon-popup-box">
+                    <div id="neon-popup-title" class="neon-popup-title">THÔNG BÁO</div>
+                    <div id="neon-popup-msg" class="popup-msg">Nội dung</div>
+                    <div id="neon-popup-actions" class="popup-actions" style="margin-top:20px;">
+                        <button id="neon-btn-cancel" class="neon-popup-btn" style="border-color:#ff4444; color:#ff4444; margin-right:10px;">HỦY</button>
+                        <button id="neon-btn-confirm" class="neon-popup-btn">ĐỒNG Ý</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', popupHTML);
+    }
+})();
+
+function showNeonAlert(msg) {
+    const overlay = document.getElementById('neon-popup-overlay');
+    document.getElementById('neon-popup-title').innerText = "THÔNG BÁO";
+    document.getElementById('neon-popup-msg').innerText = msg;
+    document.getElementById('neon-btn-cancel').style.display = 'none'; // Ẩn nút hủy
+    const btnConfirm = document.getElementById('neon-btn-confirm');
+    
+    overlay.style.display = 'flex';
+    
+    btnConfirm.onclick = function() {
+        overlay.style.display = 'none';
+    };
+}
+
+function showNeonConfirm(msg, callback) {
+    const overlay = document.getElementById('neon-popup-overlay');
+    document.getElementById('neon-popup-title').innerText = "XÁC NHẬN";
+    document.getElementById('neon-popup-msg').innerText = msg;
+    
+    const btnCancel = document.getElementById('neon-btn-cancel');
+    const btnConfirm = document.getElementById('neon-btn-confirm');
+    
+    btnCancel.style.display = 'inline-block';
+    overlay.style.display = 'flex';
+
+    // Xử lý sự kiện
+    btnConfirm.onclick = function() {
+        overlay.style.display = 'none';
+        if (callback) callback();
+    };
+    
+    btnCancel.onclick = function() {
+        overlay.style.display = 'none';
+    };
+}
+
 // --- 1. KHỞI TẠO DỮ LIỆU AN TOÀN ---
-// Cấu trúc mới: appData chứa tổng ngân sách và mảng các ví con
 let appData = JSON.parse(localStorage.getItem('app_data_v4')) || {
     totalBudget: 0,
-    wallets: [] // Để trống, chờ người dùng tạo
+    wallets: [] 
 };
 
-let mName = localStorage.getItem('mName_v3') || "Tháng hiện tại";
+let mName = localStorage.getItem('mName_v3') || "Vào cài đặt để đặt tên cho kỳ";
 let theme = localStorage.getItem('theme_v3') || 'light';
 
 // Hàm tiện ích
@@ -21,24 +77,20 @@ function tab(id) {
     const screens = document.querySelectorAll('.screen');
     const navItems = document.querySelectorAll('.nav-item');
     
-    // Ẩn tất cả màn hình
     screens.forEach(e => e.classList.remove('active'));
     navItems.forEach(e => e.classList.remove('active'));
     
-    // Hiện màn hình được chọn
     const targetScreen = document.getElementById('screen-' + id);
     if (targetScreen) {
         targetScreen.classList.add('active');
     }
     
-    // Active nút điều hướng (Dù đã ẩn menu nhưng vẫn giữ logic này để tránh lỗi)
     const navMap = ['daily', 'budget', 'status', 'history', 'alloc', 'settings'];
     const idx = navMap.indexOf(id);
     if (navItems[idx]) {
         navItems[idx].classList.add('active');
     }
 
-    // Render lại dữ liệu mới nhất mỗi khi chuyển tab
     if (id === 'daily') renderDailyInputs();
     if (id === 'budget') renderBudgetLogic();
     if (id === 'status') renderStatusLogic(); 
@@ -56,7 +108,6 @@ function toggleTheme() {
 
 // --- 3. PHÂN BỔ (ALLOC) - GỐC RỄ ---
 
-// Vẽ danh sách ví ở màn hình Phân bổ
 function renderAllocInputs() {
     const totalEl = document.getElementById('base-total-budget');
     if (totalEl) totalEl.value = appData.totalBudget || '';
@@ -64,7 +115,7 @@ function renderAllocInputs() {
     const container = document.getElementById('alloc-wallets-container');
     if (!container) return;
     
-    container.innerHTML = ''; // Xóa cũ vẽ mới
+    container.innerHTML = ''; 
 
     appData.wallets.forEach((w, index) => {
         const div = document.createElement('div');
@@ -88,7 +139,6 @@ function renderAllocInputs() {
     previewSaving();
 }
 
-// Thêm ví mới
 function addNewWallet() {
     const name = prompt("Nhập tên ví mới (Ví dụ: Trà sữa):");
     if (name) {
@@ -105,29 +155,25 @@ function addNewWallet() {
     }
 }
 
-// Xóa ví
 function deleteWallet(index) {
     const w = appData.wallets[index];
-    if(confirm(`CẢNH BÁO: Bạn có chắc muốn xóa ví "${w.name.toUpperCase()}"?\nToàn bộ dữ liệu nhập liệu và biến động của ví này sẽ mất vĩnh viễn!`)) {
+    showNeonConfirm(`CẢNH BÁO: Bạn có chắc muốn xóa ví "${w.name.toUpperCase()}"?\nDữ liệu sẽ mất vĩnh viễn!`, () => {
         appData.wallets.splice(index, 1);
         saveDB();
         renderAllocInputs();
-    }
+    });
 }
 
-// Cập nhật ngân sách cho từng ví
 function updateWalletAlloc(index, val) {
     appData.wallets[index].alloc = Number(val);
     previewSaving(); 
 }
 
-// Lưu tổng ngân sách gốc
 function updateBaseTotal(val) {
     appData.totalBudget = Number(val);
     previewSaving();
 }
 
-// Tính toán Tiết kiệm dự tính (Real-time)
 function previewSaving() {
     const total = appData.totalBudget || 0;
     const allocated = appData.wallets.reduce((sum, w) => sum + (w.alloc || 0), 0);
@@ -135,16 +181,41 @@ function previewSaving() {
     if(display) display.innerText = (total - allocated).toLocaleString('vi-VN') + " K";
 }
 
-// Nút Lưu Cấu Hình
+// Hàm Lưu Phân Bổ: Kích hoạt ngày đầu kỳ
 function saveAllocConfig() {
     saveDB();
-    alert("Đã cập nhật cấu trúc Ví & Ngân sách!");
+    const now = new Date();
+    const d = now.getDate().toString().padStart(2,'0');
+    const m = (now.getMonth()+1).toString().padStart(2,'0');
+    const y = now.getFullYear();
+    const startDateString = `${d}/${m}/${y}`;
+    
+    localStorage.setItem('AURA_START_DATE', startDateString);
+    showNeonAlert("Đã lưu cấu trúc Ví & Đặt mốc ĐẦU KỲ: " + startDateString);
     tab('daily'); 
 }
 
 // --- 4. NHẬP LIỆU (DAILY INPUT) ---
 
+function renderStartDate() {
+    const mTitle = document.getElementById('display-month-title');
+    const startDate = localStorage.getItem('AURA_START_DATE');
+    
+    const oldEl = document.getElementById('start-date-display');
+    if(oldEl) oldEl.remove();
+
+    if(startDate && mTitle) {
+        const div = document.createElement('div');
+        div.id = 'start-date-display';
+        div.className = 'start-date-display';
+        div.innerText = `Đầu kỳ: ${startDate}`;
+        mTitle.parentNode.insertBefore(div, mTitle.nextSibling);
+    }
+}
+
 function renderDailyInputs() {
+    renderStartDate(); 
+
     const container = document.getElementById('daily-wallets-list');
     if (!container) return;
     
@@ -186,9 +257,7 @@ function saveTransaction(index) {
     if (val > 0) {
         w.spent += val;      
         w.lastInput = val;   
-        
         saveDB();
-        
         inputEl.value = '';
         document.getElementById(`display-${w.id}`).innerText = fmt(w.spent * 1000);
     }
@@ -197,14 +266,14 @@ function saveTransaction(index) {
 function undoTransaction(index) {
     const w = appData.wallets[index];
     if (w.lastInput > 0) {
-        if(confirm(`Hoàn tác lệnh vừa nhập: trừ lại ${w.lastInput}K?`)) {
+        showNeonConfirm(`Hoàn tác lệnh vừa nhập: trừ lại ${w.lastInput}K?`, () => {
             w.spent -= w.lastInput;
             w.lastInput = 0; 
             saveDB();
             document.getElementById(`display-${w.id}`).innerText = fmt(w.spent * 1000);
-        }
+        });
     } else {
-        alert("Không có lệnh nhập mới nào để xóa!");
+        showNeonAlert("Không có lệnh nhập mới nào để xóa!");
     }
 }
 
@@ -220,11 +289,9 @@ function renderBudgetLogic() {
     const spentTotal = appData.wallets.reduce((s, w) => s + (w.spent || 0), 0) * 1000;
     const allocated = appData.wallets.reduce((s, w) => s + (w.alloc || 0), 0) * 1000;
 
-    // 1. Hiển thị Tiết kiệm dự tính
     const displaySaving = document.getElementById('static-saving-display');
     if (displaySaving) displaySaving.innerText = fmt(totalBudget - allocated) + " VNĐ";
 
-    // 2. Hiển thị chi tiết từng ví
     const container = document.getElementById('budget-details');
     if (container) {
         let html = '';
@@ -242,7 +309,6 @@ function renderBudgetLogic() {
         container.innerHTML = html;
     }
 
-    // 3. Hiển thị Số dư thực tế
     const actualBalance = totalBudget - spentTotal;
     const balEl = document.getElementById('actual-balance-display');
     const balBox = document.getElementById('balance-box-ui');
@@ -272,56 +338,89 @@ function renderStatusLogic() {
     if(percentEl) percentEl.innerText = percent.toFixed(1) + "%";
     
     let statusText = "Ổn định";
-    if(percent >= 75) statusText = "Rất tốt (Sakura)";
-    else if(percent >= 50) statusText = "Tốt (Summer)";
-    else if(percent >= 25) statusText = "Cẩn thận (Fall)";
-    else if(percent >= 0) statusText = "Nguy hiểm (Winter)";
-    else statusText = "Vỡ nợ (Zero)";
+    if(percent >= 75) statusText = "Rất tốt";
+    else if(percent >= 50) statusText = "Tốt";
+    else if(percent >= 25) statusText = "Cẩn thận";
+    else if(percent >= 0) statusText = "Nguy hiểm";
+    else statusText = "Vỡ nợ";
     
     const statusTextEl = document.getElementById('hologram-status-text');
     if(statusTextEl) statusTextEl.innerText = statusText;
     
-    // Gọi Magic
     if(typeof updateVisuals === "function") updateVisuals(percent);
 }
 
 // --- 6. LOGIC LỊCH SỬ & KẾT THÚC THÁNG ---
 
-function endMonth() {
-    if(!confirm("Xác nhận KẾT THÚC THÁNG?\n- Dữ liệu hiện tại sẽ được lưu vào Lịch sử.\n- Các số liệu đã chi sẽ được reset về 0.")) return;
+function endMonth(isAuto = false) {
+    const executeSettle = () => {
+        const totalSpent = appData.wallets.reduce((sum, w) => sum + (w.spent || 0), 0) * 1000;
+        const totalBudget = appData.totalBudget * 1000;
+        const finalBalance = totalBudget - totalSpent;
 
-    const totalSpent = appData.wallets.reduce((sum, w) => sum + (w.spent || 0), 0) * 1000;
-    const totalBudget = appData.totalBudget * 1000;
-    const finalBalance = totalBudget - totalSpent;
+        let snapshotData = appData.wallets.map(w => ({
+            name: w.name,
+            spent: w.spent * 1000,
+            note: w.note
+        }));
 
-    let snapshotData = appData.wallets.map(w => ({
-        name: w.name,
-        spent: w.spent * 1000,
-        note: w.note
-    }));
+        const now = new Date();
+        const d = now.getDate().toString().padStart(2,'0');
+        const m = (now.getMonth()+1).toString().padStart(2,'0');
+        const y = now.getFullYear();
+        const endDateString = `${d}/${m}/${y}`;
+        
+        let startDateString = localStorage.getItem('AURA_START_DATE') || "??/??/????";
+        
+        let daysText = "";
+        if (startDateString !== "??/??/????") {
+            const parts = startDateString.split('/');
+            const startObj = new Date(parts[2], parts[1]-1, parts[0]);
+            const endObj = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            const diffTime = Math.abs(endObj - startObj);
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); 
+            daysText = `(${diffDays} ngày)`;
+        }
 
-    const record = {
-        id: Date.now(),
-        name: mName,
-        date: new Date().toLocaleDateString('vi-VN'),
-        balance: finalBalance,
-        details: snapshotData
+        const fullDateString = `${startDateString} - ${endDateString} ${daysText}`;
+
+        const record = {
+            id: Date.now(),
+            name: mName,
+            date: fullDateString,
+            balance: finalBalance,
+            details: snapshotData
+        };
+
+        const hist = JSON.parse(localStorage.getItem('hist_v3')) || [];
+        hist.unshift(record);
+        localStorage.setItem('hist_v3', JSON.stringify(hist));
+
+        appData.totalBudget = 0;
+        appData.wallets.forEach(w => {
+            w.alloc = 0; 
+            w.spent = 0; 
+            w.lastInput = 0;
+            w.note = "";
+        });
+        saveDB();
+        
+        localStorage.removeItem('AURA_START_DATE');
+
+        if(isAuto) {
+             localStorage.setItem('AURA_LAST_SYNC', new Date().toISOString());
+        }
+
+        if(!isAuto) showNeonAlert("Đã kết toán & Lưu vào lịch sử!");
+        tab('history');
     };
 
-    const hist = JSON.parse(localStorage.getItem('hist_v3')) || [];
-    hist.unshift(record);
-    localStorage.setItem('hist_v3', JSON.stringify(hist));
-
-    // Reset dữ liệu
-    appData.wallets.forEach(w => {
-        w.spent = 0;
-        w.lastInput = 0;
-        w.note = "";
-    });
-    saveDB();
-
-    alert("Đã chốt sổ tháng cũ & Mở tháng mới!");
-    tab('history');
+    if (isAuto) {
+        executeSettle(); 
+    } else {
+        showNeonConfirm("Xác nhận KẾT THÚC KỲ?\n(Dữ liệu sẽ được lưu và ví sẽ về 0)", executeSettle);
+    }
 }
 
 function renderHistory() {
@@ -348,19 +447,21 @@ function renderHistory() {
                 </div>
             `).join('');
         } else {
-            detailHtml = '<i style="font-size:12px; color:#999;">Dữ liệu cũ (Không hiển thị chi tiết)</i>';
+            detailHtml = '<i style="font-size:12px; color:#999;">Dữ liệu cũ</i>';
         }
 
         return `
-            <div class="card history-card">
-                <div class="history-header" onclick="this.nextElementSibling.classList.toggle('show')">
-                    <div>
-                        <div style="font-weight:bold; font-size:16px;">${h.name}</div>
-                        <div style="font-size:12px; color:#888;">${h.date}</div>
-                    </div>
-                    <div style="font-weight:900; font-size:16px; ${h.balance < 0 ? 'color:var(--danger)' : 'color:var(--success)'}">
+            <div class="card history-card" style="padding: 10px !important;">
+                <div class="history-header" onclick="this.nextElementSibling.classList.toggle('show')" style="display: block !important; text-align: left;">
+                    <div style="font-weight:bold; font-size:16px; margin-bottom: 5px; color: var(--neon);">${h.name}</div>
+                    
+                    <div style="font-weight:900; font-size:20px; margin-bottom: 8px; ${h.balance < 0 ? 'color:var(--danger)' : 'color:var(--success)'}">
                         ${h.balance < 0 ? '' : 'Dư: '}${fmt(h.balance)}
                     </div>
+
+                    <div class="history-date-range" style="border-top: 1px solid rgba(0, 242, 255, 0.1); padding-top: 8px; opacity: 0.8;">
+                        ${h.date}
+                    </div> 
                 </div>
                 <div class="history-details">
                     ${detailHtml}
@@ -372,12 +473,12 @@ function renderHistory() {
 }
 
 function delHist(id) {
-    if(confirm("Xóa bản ghi này?")) {
+    showNeonConfirm("Xóa bản ghi lịch sử này?", () => {
         let hist = JSON.parse(localStorage.getItem('hist_v3')) || [];
         hist = hist.filter(h => h.id !== id);
         localStorage.setItem('hist_v3', JSON.stringify(hist));
         renderHistory();
-    }
+    });
 }
 
 function updateMonthName() {
@@ -386,13 +487,62 @@ function updateMonthName() {
         mName = val;
         localStorage.setItem('mName_v3', mName);
         document.getElementById('display-month-title').innerText = mName;
-        alert("Đã đổi tên tháng");
+        showNeonAlert("Đã đổi tên tháng thành công!");
     }
 }
 
 // --- 7. KÍCH HOẠT HỆ THỐNG & LỄ TÂN ĐIỀU PHỐI (QUAN TRỌNG) ---
+
+// [UPDATE V9.0] Hàm Kiểm tra Tự động Kết toán - BẢO MẬT CHẶN LỆNH MA
+function checkAutoSettle() {
+    // 1. KIỂM TRA QUYỀN HẠN
+    const clearance = localStorage.getItem('AURA_CLEARANCE_LEVEL') || 'INITIATOR-0';
+    const isAuthorized = clearance.includes('ARCHITECT') || clearance.includes('ORCHESTRATOR');
+
+    const status = localStorage.getItem('AURA_TIME_STATUS');
+
+    // 2. CHẶN VÀ HỦY DỮ LIỆU NẾU MẤT QUYỀN HẠN
+    if (status === 'ACTIVE' && !isAuthorized) {
+        console.warn("BẢO MẬT: Phát hiện chu kỳ tự động của User không đủ quyền hạn. Đang tiến hành hủy...");
+        localStorage.removeItem('AURA_TIME_STATUS');
+        localStorage.removeItem('AURA_TIME_MODE');
+        localStorage.removeItem('AURA_LAST_SYNC');
+        return; 
+    }
+
+    // 3. NẾU KHÔNG CÓ LỆNH HOẶC CHƯA KÍCH HOẠT THÌ BỎ QUA
+    if (status !== 'ACTIVE' || !isAuthorized) return;
+
+    // 4. LOGIC TÍNH TOÁN THỜI GIAN
+    const mode = localStorage.getItem('AURA_TIME_MODE');
+    const lastSyncStr = localStorage.getItem('AURA_LAST_SYNC');
+    
+    if (!lastSyncStr) return;
+    if (appData.totalBudget === 0 && appData.wallets.length === 0) return;
+
+    const lastSync = new Date(lastSyncStr);
+    const now = new Date();
+    const d1 = new Date(lastSync.getFullYear(), lastSync.getMonth(), lastSync.getDate());
+    const d2 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    const diffTime = Math.abs(d2 - d1);
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); 
+    
+    let shouldSettle = false;
+    if (mode === 'day' && now.getDate() !== lastSync.getDate()) shouldSettle = true;
+    else if (mode === 'week' && diffDays >= 7) shouldSettle = true;
+    else if (mode === 'month' && now.getMonth() !== lastSync.getMonth()) shouldSettle = true;
+    else if (mode === 'cycle30' && diffDays >= 30) shouldSettle = true;
+
+    // 5. THỰC THI KẾT TOÁN
+    if (shouldSettle) {
+        console.log("AUTO SETTLE AUTHORIZED & TRIGGERED!");
+        endMonth(true); 
+    }
+}
+
+// KHỞI ĐỘNG HỆ THỐNG
 window.onload = function() {
-    // 1. Khôi phục các cài đặt hiển thị cũ
     const mInput = document.getElementById('month-name-inp');
     if (mInput) mInput.value = mName;
     
@@ -401,24 +551,20 @@ window.onload = function() {
     
     document.body.setAttribute('data-theme', theme);
     
-    // 2. LỄ TÂN (RECEPTIONIST) - Xử lý tín hiệu từ Sảnh Hologram
+    // 1. Chạy Lễ tân tự động
+    checkAutoSettle();
+
+    // 2. Xử lý điều hướng từ Sảnh
     const params = new URLSearchParams(window.location.search);
     const targetTask = params.get('task');
 
     if (targetTask) {
-        // CASE A: Vào từ Sảnh (có mật hiệu)
-        // -> Mở đúng tab được yêu cầu (ví dụ: Budget, History...)
         tab(targetTask);
-        
-        // -> Tắt ngay Splash Screen (vì loading đã chạy bên Sảnh rồi)
         const splash = document.getElementById('splash-screen');
-        if(splash) splash.style.display = 'none';
-        
+        if(splash) splash.style.display = 'none'; // Đã thêm lệnh ẩn màn hình chờ!
     } else {
-        // CASE B: Mở trực tiếp (Không qua sảnh)
-        // -> Mở tab mặc định là Nhập liệu
         tab('daily');
     }
     
-    console.log("System V8 Active - Full Logic Loaded with Hologram Integration");
+    console.log("System V9.0 Active - Core Fixed & Security Ready");
 };

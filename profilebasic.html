@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>IDENTITY - AURA SYSTEM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="design.css">
+    
+    <link rel="stylesheet" href="avatarframe.css">
+    <script src="nguoigaccong.js"></script>
+    <script src="avatarframe.js"></script>
+<div class="nav-header" style="position: absolute; top: 5px; left: 5px; z-index: 1000;">
+    <div onclick="window.location.href='./hologram0.html'" style="cursor: pointer; display: flex; align-items: center; justify-content: center;">
+        <svg viewBox="0 0 24 24" width="30" height="30" stroke="var(--neon)" stroke-width="2.5" fill="none" style="filter: drop-shadow(0 0 8px var(--neon));">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+    </div>
+</div>
+    <style>
+        /* --- GIAO DIỆN "3 XU" (WIRE-FRAME STYLE) --- */
+        body {
+            background-color: #000;
+            color: var(--neon);
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- PHẦN 1: NỬA TRÊN (COVER AREA) --- */
+        .top-section {
+            height: 35vh; 
+            position: relative;
+            border-bottom: 1px dashed #333;
+            display: flex;
+            align-items: flex-end; 
+            justify-content: center;
+            padding-bottom: 0; 
+        }
+
+        /* Khung Cover (Nền lưới) */
+        .wireframe-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 1;
+            cursor: pointer;
+        }
+        
+        .wireframe-cover:hover {
+            background-color: rgba(0, 243, 255, 0.05);
+        }
+
+        /* Khung Avatar (Vỏ chứa) */
+        .avatar-container {
+            width: 140px; /* Kích thước chuẩn khớp với linh kiện */
+            height: 140px;
+            position: relative;
+            z-index: 5;
+            margin-bottom: -50px; 
+        }
+
+        /* VỎ AVATAR SẠCH (Đã bỏ border cứng và cho phép tràn viền) */
+        .wireframe-avatar {
+            width: 100%;
+            height: 100%;
+            position: relative; /* Để linh kiện con bám theo */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* QUAN TRỌNG: Để hiển thị Tia sét/Quạt nằm ngoài khung */
+            overflow: visible !important; 
+            
+            cursor: pointer;
+            border-radius: 50%; /* Giữ bo tròn cho ảnh bên trong */
+        }
+
+        #user-avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%; /* Bo tròn ảnh */
+            display: none;
+            position: relative;
+            z-index: 1; /* Ảnh nằm dưới khung neon (z-index 5) */
+        }
+
+        .upload-hint {
+            font-size: 40px;
+            animation: blink 1s infinite;
+            color: inherit;
+            position: absolute;
+            z-index: 10;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .hidden-input { display: none; }
+
+
+        /* --- PHẦN 2: NỬA DƯỚI (INFO) --- */
+        .bottom-section {
+            padding: 20px;
+            padding-top: 60px; 
+            height: 65vh; 
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .nickname-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .level-task-container {
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            padding: 15px;
+            position: relative;
+        }
+        
+        .level-title {
+            font-size: 12px;
+            background: #000;
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            padding: 0 5px;
+            color: #666;
+        }
+
+        .level-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        /* Thanh EXP */
+        .exp-track {
+            width: 100%;
+            height: 8px;
+            background: #111;
+            border: 1px solid #333;
+            position: relative;
+        }
+        .exp-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #39ff14 !important;
+            box-shadow: 0 0 10px #39ff14 !important;
+            transition: width 0.5s ease;
+        }
+
+        #rank-badge-display {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            letter-spacing: 3px;
+            opacity: 0.7;
+            /* Đã bỏ ép màu cứng, để nó tự theo theme neon */
+        }
+
+        .upgrade-btn {
+            margin-top: auto;
+            margin-bottom: 80px;
+            width: 100%;
+            padding: 15px;
+            background: transparent;
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .upgrade-btn:hover {
+            background: var(--neon);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon);
+        }
+
+        .back-btn {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 10px;
+        }
+/* Ẩn số dư và thông báo cấp độ kế tiếp */
+#savings-num, 
+.level-task-container > div:last-child {
+    display: none !important;
+}
+
+    </style>
+</head>
+<body>
+
+    <input type="file" id="avatar-input" class="hidden-input" accept="image/*">
+    <input type="file" id="cover-input" class="hidden-input" accept="image/*">
+
+    <div class="top-section">
+        <div class="wireframe-cover" id="cover-bg" onclick="triggerCoverUpload()" title="Nhấp để đổi ảnh bìa"></div>
+        
+        <div class="avatar-container">
+            <div class="wireframe-avatar" id="avatar-frame" onclick="triggerAvatarUpload()">
+                <img id="user-avatar-img" src="" alt="User Avatar">
+                <div class="upload-hint" id="upload-icon">↑</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-section">
+
+        <div class="nickname-box" onclick="editNickname()" style="cursor: pointer;">
+    <span id="display-nickname">Nhập nickname</span>
+</div>
+
+        <div id="rank-badge-display">[ LOADING... ]</div>
+
+        <div class="level-task-container">
+            <span class="level-title">SYSTEM_LEVEL_CORE</span>
+            
+            <div class="level-info">
+                <span>LVL: <b id="lvl-num">0</b></span>
+                <span id="savings-num">0 VNĐ</span>                
+            </div>
+
+            <div class="exp-track">
+                <div class="exp-bar" id="exp-progress"></div>
+            </div>
+            <div style="text-align: right; font-size: 10px; color: #666; margin-top: 5px;">
+                NEXT LEVEL: 10,000 VNĐ
+            </div>
+        </div>
+
+        <button class="upgrade-btn" onclick="window.location.href='vip.html'">
+            ▲ UPGRADE TO PREMIUM
+        </button>
+
+        <a href="index.html" class="back-btn">← Quay lại Dashboard</a>
+    </div>
+
+    <script>
+        // --- 1. KHỞI TẠO ---
+        window.onload = function() {
+            loadIdentity();
+            calculateLevel();
+            loadImages();
+        };
+
+        function loadIdentity() {
+            // Lấy thông tin từ Gác Cổng (Chỉ lấy Tên Rank, không lấy Màu)
+            const identity = NguoiGacCong.traLoiDanhTinh();
+            
+            // Hiển thị tên Rank
+            const badge = document.getElementById('rank-badge-display');
+            badge.innerText = identity.rankName;
+
+            // --- LỆNH MỚI: GỌI LINH KIỆN LẮP RÁP ---
+            // Nó sẽ tự kiểm tra Rank và lắp khung/quạt/sét tương ứng
+            if (typeof AvatarFrameManager !== 'undefined') {
+                AvatarFrameManager.render('avatar-frame');
+            } else {
+                console.warn("Chưa tìm thấy module AvatarFrameManager!");
+            }
+
+            // Xử lý Nickname
+            const savedName = localStorage.getItem('user_nickname_core');
+            if (savedName) {
+                document.getElementById('display-nickname').innerText = savedName;
+            } else {
+                document.getElementById('display-nickname').innerText = "Nhập nickname của bạn";
+            }
+        }
+
+        // --- 2. TÍNH CẤP & MÀU THANH EXP ---
+        function calculateLevel() {
+            const appData = JSON.parse(localStorage.getItem('app_data_v4')) || { totalBudget: 0, wallets: [] };
+            let currentSpent = 0;
+            appData.wallets.forEach(w => currentSpent += (w.spent || 0));
+            const currentBalance = (appData.totalBudget || 0) - currentSpent;
+            
+            let totalSavings = currentBalance * 1000; 
+
+            const levelSize = 10000;
+            let level = Math.floor(totalSavings / levelSize);
+            let remainder = totalSavings % levelSize;
+            let expPercent = (remainder / levelSize) * 100;
+
+            const expBar = document.getElementById('exp-progress');
+            const lvlNum = document.getElementById('lvl-num');
+            
+            if (totalSavings < 0) {
+                expBar.style.backgroundColor = '#ff0000';
+                expBar.style.boxShadow = '0 0 10px #ff0000';
+                expBar.style.width = '100%';
+                lvlNum.style.color = '#ff0000';
+            } else {
+                expBar.style.setProperty('background-color', '#39ff14', 'important');
+                expBar.style.setProperty('box-shadow', '0 0 10px #39ff14', 'important');
+                expBar.style.width = expPercent + '%';
+                lvlNum.style.color = '#39ff14';
+            }
+
+            lvlNum.innerText = level;
+            document.getElementById('savings-num').innerText = totalSavings.toLocaleString('vi-VN') + " đ";
+        }
+
+        function editNickname() {
+            const newName = prompt("Nhập nickname hiển thị:");
+            if (newName) {
+                localStorage.setItem('user_nickname_core', newName);
+                document.getElementById('display-nickname').innerText = newName;
+            }
+        }
+
+        // --- 3. XỬ LÝ ẢNH (AVATAR & COVER) ---
+        function triggerAvatarUpload() { document.getElementById('avatar-input').click(); }
+        document.getElementById('avatar-input').addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgData = e.target.result;
+                    localStorage.setItem('USER_AVATAR_BASE64', imgData);
+                    displayAvatar(imgData);
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function triggerCoverUpload() { document.getElementById('cover-input').click(); }
+        document.getElementById('cover-input').addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgData = e.target.result;
+                    localStorage.setItem('USER_COVER_BASE64', imgData);
+                    displayCover(imgData);
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function loadImages() {
+            const savedAvatar = localStorage.getItem('USER_AVATAR_BASE64');
+            if (savedAvatar) displayAvatar(savedAvatar);
+            const savedCover = localStorage.getItem('USER_COVER_BASE64');
+            if (savedCover) displayCover(savedCover);
+        }
+
+        function displayAvatar(src) {
+            const img = document.getElementById('user-avatar-img');
+            const icon = document.getElementById('upload-icon');
+            img.src = src;
+            img.style.display = 'block';
+            icon.style.display = 'none';
+        }
+
+        function displayCover(src) {
+            const cover = document.getElementById('cover-bg');
+            cover.style.backgroundImage = `url('${src}')`;
+            cover.style.backgroundSize = 'cover';
+            cover.style.backgroundRepeat = 'no-repeat';
+        }
+    </script>
+</body>
+</html>

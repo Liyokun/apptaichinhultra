@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI SCAN - ANOMALY DETECTION</title>
+    <title>AI LEGACY - WEALTH STRATEGY</title>
     <style>
-        /* --- 1. CẤU HÌNH GIAO DIỆN --- */
+        /* --- 1. CẤU HÌNH GIAO DIỆN (COPY TỪ LENH01) --- */
         :root {
             --neon: #00f2ff;
             --neon-green: #00ff88;
@@ -250,8 +250,8 @@
             <div class="corner br"></div>
 
             <div class="header">
-                <h1>AI SCANNER V1.0</h1>
-                <div class="status">HỆ THỐNG ĐANG HOẠT ĐỘNG</div>
+                <h1>AI LEGACY V1.0</h1>
+                <div class="status">CHIẾN LƯỢC TÍCH LŨY</div>
             </div>
 
             <div class="content" id="output"></div>
@@ -263,17 +263,16 @@
     </div>
 
     <script>
-        // --- BỘ THU TÍN HIỆU ĐỔI NỀN (TỪ HOLOGRAM1) ---
+        // --- BỘ THU TÍN HIỆU ĐỔI NỀN (GIỮ NGUYÊN) ---
         window.addEventListener('storage', (e) => {
             if (e.key === 'AURA_COMMAND_BG' && e.newValue) {
                 const targetBg = e.newValue;
                 document.body.style.backgroundImage = `url('./${targetBg}')`;
-                localStorage.setItem('user_lobby_bg', targetBg); // Đồng bộ lại cache cục bộ
+                localStorage.setItem('user_lobby_bg', targetBg);
                 console.log("AI Scanner: Đã đồng bộ nền -> " + targetBg);
             }
         });
 
-        // --- KHỞI TẠO (Ưu tiên lấy nền từ Sảnh) ---
         window.onload = function() {
             const savedBg = localStorage.getItem('user_lobby_bg');
             if (savedBg) {
@@ -281,7 +280,7 @@
             } else {
                 document.body.style.backgroundImage = `url('./farfuture01.png')`;
             }
-            runAnalysis(); // Chạy logic phân tích cũ
+            runAnalysis(); // Kích hoạt lệnh
         };
 
         const output = document.getElementById('output');
@@ -302,48 +301,82 @@
             });
         }
 
+        // --- [NEW] LOGIC CHIẾN LƯỢC TÍCH LŨY (LỆNH 04) ---
         async function runAnalysis() {
-            await printLine("> Đang kết nối giao thức bảo mật...", "system", 200);
-            await printLine("> Đang truy xuất dữ liệu LocalStorage...", "system", 300);
+            await printLine("> Đang kết nối giao thức Legacy...", "system", 200);
+            await printLine("> Đang truy xuất dữ liệu từ các chu kỳ quá khứ...", "system", 800);
 
-            const rawData = localStorage.getItem('app_data_v4');
-            const appData = rawData ? JSON.parse(rawData) : { wallets: [] };
-            const wallets = appData.wallets || [];
-
-            if (wallets.length === 0) {
-                await printLine("⚠ LỖI: Dữ liệu trống.", "error", 500);
+            // 1. LẤY DỮ LIỆU
+            const rawHist = localStorage.getItem('hist_v3');
+            const history = rawHist ? JSON.parse(rawHist) : [];
+            
+            // Dữ liệu hiện tại để so sánh
+            const rawAppData = localStorage.getItem('app_data_v4');
+            const appData = rawAppData ? JSON.parse(rawAppData) : { totalBudget: 0, wallets: [] };
+            
+            // 2. GÁC CỔNG DỮ LIỆU (GATEKEEPER)
+            if (history.length === 0) {
+                await printLine("[SYSTEM]: Không tìm thấy hồ sơ lưu trữ (Legacy Data).", "error", 1500);
+                await printLine("Giao thức tích lũy yêu cầu ít nhất 1 chu kỳ đã kết toán để xác định hệ số kỷ luật.", "system", 2000);
                 return;
             }
 
-            await printLine(`> Phát hiện ${wallets.length} thực thể ví.`, "success", 500);
-            await printLine("> Bắt đầu quét lạm chi...", "normal", 800);
-
-            let anomalyCount = 0;
-            for (let w of wallets) {
-                if (w.spent > w.alloc) {
-                    anomalyCount++;
-                    const over = (w.spent - w.alloc) * 1000;
-                    await printLine(`⚠ CẢNH BÁO: [${w.name}] lạm chi ${over.toLocaleString()} VNĐ`, "error", 1000);
-                }
-            }
-
-            for (let w of wallets) {
-                if (w.spent > 0 && (!w.note || w.note.trim() === "")) {
-                    await printLine(`⚠ LƯU Ý: [${w.name}] đang tiêu không ghi chú. Độ tin cậy: THẤP.`, "system", 1500);
-                }
-            }
-
-            await printLine("----------------------------------------", "system", 1800);
+            // 3. TÍNH TOÁN DI SẢN (LEGACY)
+            // Tổng tích lũy từ quá khứ
+            const totalLegacy = history.reduce((sum, h) => sum + (h.balance || 0), 0);
             
-            if (anomalyCount === 0) {
-                await printLine("HỆ THỐNG ỔN ĐỊNH. Không có lỗi nghiêm trọng.", "success", 2000);
-                await printLine("> Đề xuất: Duy trì tốc độ chi tiêu hiện tại.", "highlight", 2200);
+            // Kỷ lục cao nhất
+            const maxRecord = Math.max(...history.map(h => h.balance || 0));
+            const bestMonth = history.find(h => h.balance === maxRecord);
+
+            // Trung bình lịch sử
+            const avgHistory = totalLegacy / history.length;
+
+            // Số dư chu kỳ hiện tại (Tạm tính)
+            const currentTotalSpent = (appData.wallets || []).reduce((acc, w) => acc + (w.spent || 0), 0) * 1000;
+            const currentTotalBudget = (appData.totalBudget || 0) * 1000;
+            const currentBalance = currentTotalBudget - currentTotalSpent;
+
+            // 4. HIỂN THỊ KẾT QUẢ
+            await printLine(`[INFO]: Tổng số dư tích lũy qua các đời: ${totalLegacy.toLocaleString('vi-VN')} VNĐ.`, "normal", 1500);
+            await printLine(`> Kỷ lục cao nhất: ${maxRecord.toLocaleString('vi-VN')} VNĐ (Kỳ: ${bestMonth ? bestMonth.name : 'N/A'}).`, "system", 2000);
+
+            // 5. ĐÁNH GIÁ & SO SÁNH (COMPARE)
+            const diffPercent = avgHistory !== 0 ? ((currentBalance - avgHistory) / Math.abs(avgHistory)) * 100 : 0;
+            const diffDisplay = Math.abs(diffPercent).toFixed(1);
+
+            if (currentBalance >= avgHistory) {
+                await printLine(`[COMPARE]: Chu kỳ này đang tốt hơn ${diffDisplay}% so với trung bình lịch sử.`, "success", 3000);
             } else {
-                await printLine(`NGUY HIỂM: Phát hiện ${anomalyCount} bất thường cần xử lý.`, "error", 2000);
-                await printLine("> Đề xuất: Kích hoạt giao thức [Tái Phân Bổ] ngay lập tức.", "highlight", 2200);
+                await printLine(`⚠ CẢNH BÁO: Hiệu suất kỷ luật đang giảm sút ${diffDisplay}% so với mức trung bình.`, "error", 3000);
             }
 
-            await printLine("> Đang chờ lệnh người dùng... <span class='cursor'></span>", "normal", 2500);
+            // 6. XẾP HẠNG (RANK)
+            const isAllPositive = history.every(h => h.balance >= 0);
+            const isAllNegative = history.every(h => h.balance < 0);
+
+            if (isAllPositive && currentBalance > 0) {
+                await printLine(`[RANK]: [KỶ LUẬT THÉP] - Chuỗi bất bại.`, "highlight", 4000);
+            } else if (isAllNegative) {
+                await printLine(`[RANK]: [BÁO ĐỘNG ĐỎ] - Cần tái cấu trúc tài chính ngay lập tức.`, "error", 4000);
+            } else if (currentBalance > 0) {
+                await printLine(`[RANK]: [TIỀM NĂNG] - Đang đi đúng hướng.`, "success", 4000);
+            } else {
+                await printLine(`[RANK]: [BẤT ỔN] - Cần kiểm soát chi tiêu chặt chẽ hơn.`, "system", 4000);
+            }
+
+            // 7. TẦM NHÌN (ADVISE)
+            // Giả định mục tiêu ước nguyện
+            // Nếu có tính năng Ước Nguyện thì tốt, tạm thời dùng con số giả định dựa trên tích lũy
+            const estimatedCycles = currentBalance > 0 ? Math.ceil(50000000 / currentBalance) : "∞"; 
+            
+            if (currentBalance > 0) {
+                await printLine(`[ADVISE]: Duy trì phong độ này để đạt mục tiêu [Mục tiêu lớn] trong khoảng ${estimatedCycles} chu kỳ tới.`, "highlight", 5000);
+            } else {
+                await printLine(`[ADVISE]: Cần đưa số dư về dương để kích hoạt lộ trình đạt [Mục tiêu lớn].`, "error", 5000);
+            }
+
+            await printLine("> Đang chờ lệnh người dùng... <span class='cursor'></span>", "normal", 6000);
         }
     </script>
 </body>

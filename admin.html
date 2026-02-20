@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="internet.css">
+    <title>AURA SYSTEM - Integrated Clock V5</title>
+    <style>
+        :root {
+            --neon: #00f2ff;
+            --bg: #000a0f;
+            --gold: #ffd700;
+            --purple: #bc13fe;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: black;
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+            justify-content: space-between;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            user-select: none;
+        }
+
+        /* === BỤI CÔNG NGHỆ (GIỮ NGUYÊN) === */
+        .tech-particles {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--neon);
+            border-radius: 50%;
+            box-shadow: 0 0 4px var(--neon);
+            opacity: 0;
+            animation: particle-float 12s ease-in-out infinite;
+        }
+        @keyframes particle-float {
+            0% { opacity: 0; transform: translate3d(0, 0, 0); }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { opacity: 0; transform: translate3d(var(--px), var(--py), var(--pz)); }
+        }
+
+        /* === HEADER (ĐƯỢC PHÉP CHỈNH ĐỂ THÊM ĐỒNG HỒ) === */
+        .status-hud {
+            margin-top: 20px;
+            text-align: center;
+            z-index: 10;
+            width: 280px; /* Tăng nhẹ độ rộng để chứa đồng hồ */
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            transition: all 0.5s ease;
+        }
+
+        .hud-label {
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .hud-rank {
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            transition: all 0.5s ease;
+            margin-bottom: 15px; /* Tạo khoảng cách cho đồng hồ */
+        }
+
+        /* Classes màu sắc cấp độ */
+        .rank-initiator { color: #fff; text-shadow: none; }
+        .rank-operator { color: var(--neon); text-shadow: 0 0 10px var(--neon); }
+        .rank-architect {
+            background: linear-gradient(45deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6));
+        }
+        .rank-orchestrator {
+            background: linear-gradient(180deg, #e0aaff, #bc13fe, #000);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(188, 19, 254, 0.8));
+        }
+
+        /* === ĐỒNG HỒ (TÍCH HỢP MỚI) === */
+        .timer-container {
+            display: none; /* Mặc định ẩn, JS sẽ bật nếu level > 1 */
+            flex-direction: column;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 10px;
+            margin-top: 5px;
+        }
+        
+        .timer-label {
+            font-size: 9px;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .timer-digits {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+
+        /* === KHU VỰC HIỂN THỊ CHÍNH (GIỮ NGUYÊN) === */
+        .display-area {
+            position: relative;
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+        }
+
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.5s ease;
+        }
+        .tab-content.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .task-card {
+            width: 250px;
+            padding: 20px;
+            background: rgba(0, 15, 25, 0.85);
+            border: 1px solid var(--neon);
+            border-radius: 8px;
+            color: var(--neon);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3), inset 0 0 10px rgba(0, 242, 255, 0.1);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: float-straight 6s ease-in-out infinite;
+            text-align: left;
+        }
+
+        @keyframes float-straight {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        /* --- HÀO QUANG CẤP 2: OPERATOR (XANH) --- */
+        #tab1 .task-card.data-activated {
+            border-color: #fff;
+            box-shadow: 0 0 50px var(--neon), inset 0 0 30px rgba(0, 242, 255, 0.4);
+            transform: scale(1.1);
+        }
+
+        /* --- HÀO QUANG CẤP 3: ARCHITECT (VÀNG) --- */
+        #tab2 .task-card.data-activated {
+            border-color: #fff;
+            box-shadow: 0 0 50px var(--gold), inset 0 0 30px rgba(255, 215, 0, 0.4);
+            transform: scale(1.1);
+        }
+
+        /* --- HÀO QUANG CẤP 4: ORCHESTRATOR (TÍM) --- */
+        #tab3 .task-card.data-activated {
+            border-color: #fff;
+            box-shadow: 0 0 50px var(--purple), inset 0 0 30px rgba(188, 19, 254, 0.4);
+            transform: scale(1.1);
+        }
+
+        .task-title { font-weight: bold; margin-bottom: 10px; font-size: 18px; text-shadow: 0 0 5px currentColor; }
+        .task-desc { opacity: 0.7; line-height: 1.4; font-size: 13px; }
+        .task-status { margin-top: 15px; padding: 4px 8px; display: inline-block; background: rgba(0, 242, 255, 0.2); border-radius: 4px; font-size: 11px; }
+
+        /* === NÚT ĐIỀU HƯỚNG (GIỮ NGUYÊN VỊ TRÍ CỦA BẠN) === */
+        .nav-btn {
+            position: absolute;
+            top: 110%; /* Giữ nguyên vị trí cũ của bạn */
+            transform: translateY(-50%);
+            
+            background: none; 
+            border: none;     
+            box-shadow: none; 
+            
+            color: var(--neon);
+            font-size: 45px; 
+            font-weight: bold;
+            letter-spacing: -6px; 
+            
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.4s ease;
+            opacity: 0.5; 
+        }
+
+        .nav-btn:hover { 
+            opacity: 1; 
+            color: #fff;
+            text-shadow: 0 0 15px var(--neon), 0 0 30px var(--neon); 
+            transform: translateY(-50%) scale(1.2);
+        }
+
+        .nav-left { left: 50px; }
+        .nav-right { right: 50px; }
+
+        /* === BOTTOM BAR (GIỮ NGUYÊN ĐÃ SỬA) === */
+        .bottom-bar {
+            width: 40%;
+            margin-bottom: 60px; 
+            padding: 10px 0; 
+            text-align: center;
+            z-index: 10;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        }
+
+        .verify-btn {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: var(--neon);
+            background: linear-gradient(180deg, rgba(0, 242, 255, 0) 0%, rgba(0, 242, 255, 0.15) 100%);
+            border: 1px solid var(--neon);
+            padding: 10px 40px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.2), inset 0 0 20px rgba(0, 242, 255, 0.05);
+            text-transform: uppercase;
+            margin-bottom: 20px; 
+            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+        }
+
+        .verify-btn:hover {
+            background: rgba(0, 242, 255, 0.25);
+            box-shadow: 0 0 30px var(--neon), inset 0 0 15px var(--neon);
+            color: #fff;
+            text-shadow: 0 0 10px #fff;
+        }
+
+        /* === POPUP (Dùng chung cho cả 2 loại thông báo) === */
+        .popup-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .popup-box {
+            width: 320px;
+            background: rgba(0, 10, 10, 0.95);
+            border: 1px solid var(--neon); /* Mặc định màu Neon */
+            padding: 30px 20px;
+            text-align: center;
+            color: var(--neon);
+            box-shadow: 0 0 30px var(--neon);
+            border-radius: 8px;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from {transform: scale(0.5); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        
+        .popup-msg { margin-bottom: 25px; font-size: 14px; line-height: 1.6; }
+        .popup-close {
+            background: transparent; border: 1px solid currentColor; color: currentColor;
+            padding: 8px 30px; cursor: pointer; transition: 0.3s;
+            font-family: 'Courier New', monospace; font-weight: bold;
+        }
+        .popup-close:hover { background: currentColor; color: black; }
+
+        /* Popup Biến thể Warning (Màu đỏ/cam khi cảnh báo quyền hạn) */
+        .popup-warning {
+            border-color: #ff4444;
+            color: #ff4444;
+            box-shadow: 0 0 30px #ff4444;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="tech-particles" id="particles"></div>
+
+    <div class="status-hud" id="statusHud">
+        <div class="hud-label">CURRENT CLEARANCE</div>
+        <div class="hud-rank" id="rankDisplay">[INITIATOR]</div>
+        
+        <div class="timer-container" id="clockContainer">
+            <div class="timer-label">TIME REMAINING</div>
+            <div class="timer-digits" id="clockDisplay">-- : -- : --</div>
+        </div>
+    </div>
+
+    <div class="display-area">
+        
+        <div class="nav-btn nav-left" id="btnExit" style="display: none;" onclick="window.location.href='hologram1.html'">&#171;</div>
+
+        <div class="nav-btn nav-left" id="btnLeft" style="display: none;" onclick="prevTab()">&#171;</div>
+
+        <div class="tab-content active" id="tab1">
+            <div class="task-card" onclick="activateCard(1)">
+                <div class="task-title">🗝️ OPERATOR</div>
+                <div class="task-desc">Access Level 2<br>Protocol Execution & Stream Operations</div>
+                <div class="task-status">DATA</div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab2">
+            <div class="task-card" style="color: var(--gold); border-color: var(--gold);" onclick="activateCard(2)">
+                <div class="task-title">📜 ARCHITECT</div>
+                <div class="task-desc">Access Level 3<br>Process Automation & System Architecture</div>
+                <div class="task-status">BLUEPRINT</div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab3">
+            <div class="task-card" style="color: #e0aaff; border-color: #bc13fe;" onclick="activateCard(3)">
+                <div class="task-title">🔭 ORCHESTRATOR</div>
+                <div class="task-desc">Access Level 4<br>Master Protocol & Holistic Command</div>
+                <div class="task-status">ULTIMATE</div>
+            </div>
+        </div>
+
+        <div class="nav-btn nav-right" id="btnRight" onclick="nextTab()">&#187;</div>
+
+    </div>
+
+    <div class="bottom-bar">
+        <div class="verify-btn" onclick="verifyTask()">XÁC MINH</div>
+    </div>
+
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup-box" id="popupBox">
+            <div style="font-size: 30px; margin-bottom: 10px;">⚠️</div>
+            <div class="popup-msg" id="popupMessage">Thông báo hệ thống.</div>
+            <button class="popup-close" onclick="closePopup()">ĐÃ HIỂU</button>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        // PHẦN 1: NGƯỜI GÁC CỔNG (INTEGRATED GATEKEEPER)
+        // ================================================================
+        const NguoiGacCong = {
+            KEY: 'AURA_CLEARANCE_LEVEL',
+
+            _moXeDuLieu: function() {
+                const rawData = localStorage.getItem(this.KEY) || 'INITIATOR-0';
+                if (rawData.includes('-')) {
+                    const parts = rawData.split('-'); 
+                    return { roleName: parts[0], xValue: parseInt(parts[1] || '0') };
+                }
+                return { roleName: 'LEGACY', rawLevel: parseInt(rawData), xValue: 0 };
+            },
+
+            traLoiDanhTinh: function() {
+                const data = this._moXeDuLieu();
+                let finalLevel = 1;
+
+                if (data.roleName === 'ORCHESTRATOR') finalLevel = 4;
+                else if (data.roleName === 'ARCHITECT') finalLevel = 3;
+                else if (data.roleName === 'OPERATOR') finalLevel = 2;
+                else if (data.roleName === 'INITIATOR') finalLevel = 1;
+                else if (data.roleName === 'LEGACY') finalLevel = data.rawLevel || 1;
+
+                let identity = { level: finalLevel, rankName: `[${data.roleName === 'LEGACY' ? 'UNKNOWN' : data.roleName}]` };
+                
+                if (finalLevel === 4) identity.rankName = "[ORCHESTRATOR]";
+                else if (finalLevel === 3) identity.rankName = "[ARCHITECT]";
+                else if (finalLevel === 2) identity.rankName = "[OPERATOR]";
+                else identity.rankName = "[INITIATOR]";
+
+                return identity;
+            },
+
+            layGiaTriX: function() {
+                const data = this._moXeDuLieu();
+                return data.xValue;
+            }
+        };
+
+        // ================================================================
+        // PHẦN 2: BỘ MÁY ĐỒNG HỒ (CLOCK ENGINE V5)
+        // ================================================================
+        const ClockEngine = {
+            expiryKey: 'AURA_EXPIRY_TIMESTAMP',
+            lastExitKey: 'AURA_LAST_EXIT',
+            timerInterval: null,
+
+            start: function() {
+                const identity = NguoiGacCong.traLoiDanhTinh();
+                
+                // Nếu Level 1 -> Tắt đồng hồ
+                if (identity.level === 1) {
+                    document.getElementById('clockContainer').style.display = 'none';
+                    return;
+                }
+
+                // Nếu Level > 1 -> Bật đồng hồ & Tính toán
+                document.getElementById('clockContainer').style.display = 'flex';
+                this.syncColor(identity.level);
+
+                const xValue = NguoiGacCong.layGiaTriX(); // Lấy X từ người gác cổng
+                let expiryTime = localStorage.getItem(this.expiryKey);
+
+                // Nếu chưa có mốc hết hạn -> Tạo mới (Lần đầu nhập mã)
+                if (!expiryTime) {
+                    const now = new Date().getTime(); // Lấy giờ hệ thống tạm thời để làm mốc
+                    // X là số ngày. Chuyển đổi: X * 24h * 60m * 60s * 1000ms
+                    // LƯU Ý: Nếu X là giờ hay phút thì chỉnh ở đây. Mặc định theo prompt cũ là NGÀY.
+                    // Nếu X là GIỜ thì thay công thức: xValue * 60 * 60 * 1000
+                    const duration = xValue * 24 * 60 * 60 * 1000; 
+                    expiryTime = now + duration;
+                    localStorage.setItem(this.expiryKey, expiryTime);
+                }
+
+                this.tick(expiryTime); // Chạy ngay lập tức 1 lần
+                
+                // Chu kỳ đếm mỗi giây
+                if (this.timerInterval) clearInterval(this.timerInterval);
+                this.timerInterval = setInterval(() => {
+                    this.tick(expiryTime);
+                }, 1000);
+            },
+
+            tick: function(expiryTime) {
+                const now = new Date().getTime();
+                const distance = expiryTime - now;
+
+                if (distance < 0) {
+                    // HẾT GIỜ -> RESET VỀ LEVEL 1
+                    clearInterval(this.timerInterval);
+                    document.getElementById('clockDisplay').innerText = "EXPIRED";
+                    localStorage.setItem('AURA_CLEARANCE_LEVEL', 'INITIATOR-0');
+                    localStorage.removeItem(this.expiryKey);
+                    setTimeout(() => location.reload(), 2000); // Reload sau 2s
+                    return;
+                }
+
+                // Tính toán hiển thị
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                const display = document.getElementById('clockDisplay');
+
+                // Logic hiển thị: Nếu còn > 1 ngày thì hiện Ngày:Giờ
+                if (days > 0) {
+                    display.innerText = `${days} NGÀY : ${hours} GIỜ`;
+                } else {
+                    // Nếu còn < 24h thì hiện Giờ:Phút:Giây
+                    display.innerText = 
+                        `${hours.toString().padStart(2, '0')} : ` +
+                        `${minutes.toString().padStart(2, '0')} : ` +
+                        `${seconds.toString().padStart(2, '0')}`;
+                }
+            },
+
+            syncColor: function(level) {
+                const clock = document.getElementById('clockDisplay');
+                
+                // Reset màu
+                clock.style.color = "";
+                clock.style.textShadow = "";
+                clock.style.background = "";
+                clock.style.webkitTextFillColor = "";
+                clock.style.filter = "";
+
+                if (level === 2) { // Operator - Neon Blue
+                    clock.style.color = "var(--neon)";
+                    clock.style.textShadow = "0 0 10px var(--neon)";
+                } else if (level === 3) { // Architect - Gold
+                    clock.style.background = "linear-gradient(45deg, #ffd700, #ff8c00)";
+                    clock.style.webkitBackgroundClip = "text";
+                    clock.style.webkitTextFillColor = "transparent";
+                    clock.style.filter = "drop-shadow(0 0 5px rgba(255, 215, 0, 0.6))";
+                } else if (level === 4) { // Orchestrator - Purple
+                    clock.style.background = "linear-gradient(180deg, #e0aaff, #bc13fe)";
+                    clock.style.webkitBackgroundClip = "text";
+                    clock.style.webkitTextFillColor = "transparent";
+                    clock.style.filter = "drop-shadow(0 0 10px rgba(188, 19, 254, 0.8))";
+                }
+            }
+        };
+
+        // ================================================================
+        // PHẦN 3: LOGIC GIAO DIỆN CHÍNH (TAB & VERIFY)
+        // ================================================================
+        
+        let currentTab = 1;
+        const totalTabs = 3;
+        const hiddenData = { 1: false, 2: false, 3: false };
+
+        function updateHeaderUI() {
+            const identity = NguoiGacCong.traLoiDanhTinh();
+            const rankText = document.getElementById('rankDisplay');
+            const hud = document.getElementById('statusHud');
+
+            rankText.innerText = identity.rankName;
+            rankText.className = 'hud-rank'; 
+
+            // Reset style HUD
+            hud.style.boxShadow = "";
+            hud.style.borderColor = "";
+
+            if (identity.level === 1) rankText.classList.add('rank-initiator');
+            else if (identity.level === 2) {
+                rankText.classList.add('rank-operator');
+                hud.style.boxShadow = "0 0 15px var(--neon)";
+            }
+            else if (identity.level === 3) {
+                rankText.classList.add('rank-architect');
+                hud.style.borderColor = "var(--gold)";
+                hud.style.boxShadow = "0 0 20px rgba(255, 215, 0, 0.4)";
+            }
+            else if (identity.level === 4) {
+                rankText.classList.add('rank-orchestrator');
+                hud.style.borderColor = "#bc13fe";
+                hud.style.boxShadow = "0 0 30px rgba(188, 19, 254, 0.6)";
+            }
+
+            // KÍCH HOẠT ĐỒNG HỒ
+            ClockEngine.start();
+        }
+
+        function showTab(tabIndex) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab${tabIndex}`).classList.add('active');
+
+            const btnLeft = document.getElementById('btnLeft');   // Nút lùi nội bộ
+            const btnRight = document.getElementById('btnRight');
+            const btnExit = document.getElementById('btnExit');   // Nút lùi về Hologram (MỚI)
+
+            if (tabIndex === 1) {
+                // Tab Operator: Ẩn lùi nội bộ, Hiện lùi về hologram, Hiện tiến
+                btnLeft.style.display = 'none';
+                btnExit.style.display = 'flex';
+                btnRight.style.display = 'flex';
+            }
+            else if (tabIndex === 2) {
+                // Tab Architect: Hiện lùi nội bộ, Ẩn lùi hologram, Hiện tiến
+                btnLeft.style.display = 'flex';
+                btnExit.style.display = 'none';
+                btnRight.style.display = 'flex';
+            }
+            else if (tabIndex === 3) {
+                // Tab Orchestrator: Hiện lùi nội bộ, Ẩn lùi hologram, Ẩn tiến
+                btnLeft.style.display = 'flex';
+                btnExit.style.display = 'none';
+                btnRight.style.display = 'none';
+            }
+            currentTab = tabIndex;
+        }
+
+        function nextTab() { if (currentTab < totalTabs) showTab(currentTab + 1); }
+        function prevTab() { if (currentTab > 1) showTab(currentTab - 1); }
+
+        function activateCard(tabIndex) {
+            hiddenData[tabIndex] = true;
+            const card = document.querySelector(`#tab${tabIndex} .task-card`);
+            card.classList.add('data-activated');
+        }
+
+        // --- HÀM XÁC MINH (Logic Cảnh Báo Mới) ---
+        function verifyTask() {
+            const identity = NguoiGacCong.traLoiDanhTinh();
+            const currentLevel = identity.level; // Cấp độ hiện tại của User
+            const requiredLevel = currentTab + 1; // Tab 1 ứng với Level 2, Tab 2 -> Lvl 3...
+            
+            // 1. Kiểm tra xem đã click thẻ chưa
+            if (hiddenData[currentTab] !== true) {
+                showPopup("Vui lòng lựa chọn THẺ QUYỀN HẠN để nhấp vào trước khi xác minh.", "normal");
+                return;
+            }
+
+            // =======================================================
+            // LOGIC CHẶN TRUY CẬP DỰA TRÊN CẤP ĐỘ (ĐÃ SỬA THEO YÊU CẦU)
+            // =======================================================
+
+            // Nếu người dùng đã có quyền Operator (Level 2)
+            // Chặn truy cập trang xác minh Operator (Tab 1)
+            if (currentLevel >= 2 && currentTab === 1) {
+                showPopup("CẢNH BÁO: Bạn đang sở hữu quyền hạn này hoặc cao hơn.<br>Vui lòng không xác minh lại.", "warning");
+                return; 
+            }
+
+            // Nếu người dùng đã có quyền Architect (Level 3)
+            // Chặn truy cập trang xác minh Operator (Tab 1) và Architect (Tab 2)
+            if (currentLevel >= 3 && (currentTab === 1 || currentTab === 2)) {
+                showPopup("CẢNH BÁO: Bạn đang sở hữu quyền hạn này hoặc cao hơn.<br>Vui lòng không xác minh lại.", "warning");
+                return;
+            }
+
+            // Nếu người dùng đã có quyền Orchestrator (Level 4)
+            // Chặn tất cả các trang xác minh (Tab 1, 2, 3)
+            if (currentLevel >= 4) {
+                 showPopup("CẢNH BÁO: Bạn đang sở hữu quyền hạn tối cao.<br>Không cần xác minh thêm bất cứ cấp độ nào.", "warning");
+                 return;
+            }
+
+            // 3. Nếu không bị chặn thì cho phép chuyển trang
+            if (currentTab === 1) window.location.href = "operatorverify.html";
+            else if (currentTab === 2) window.location.href = "architectverify.html";
+            else if (currentTab === 3) window.location.href = "orchestratorverify.html";
+        }
+
+        // --- HỆ THỐNG POPUP ĐA DẠNG ---
+        function showPopup(message, type) {
+            const overlay = document.getElementById('popupOverlay');
+            const box = document.getElementById('popupBox');
+            const msg = document.getElementById('popupMessage');
+            
+            overlay.style.display = 'flex';
+            msg.innerHTML = message;
+
+            // Reset class cũ
+            box.className = 'popup-box';
+            
+            // Thêm class warning nếu cần (đổi màu đỏ)
+            if (type === 'warning') {
+                box.classList.add('popup-warning');
+            }
+        }
+
+        function closePopup() {
+            document.getElementById('popupOverlay').style.display = 'none';
+        }
+
+        // --- KHỞI TẠO BỤI ---
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 100; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            const moveX = (Math.random() - 0.5) * 200 + 'px';
+            const moveY = (Math.random() - 0.5) * 200 + 'px';
+            const moveZ = (Math.random() - 0.5) * 300 + 'px';
+            particle.style.setProperty('--px', moveX);
+            particle.style.setProperty('--py', moveY);
+            particle.style.setProperty('--pz', moveZ);
+            particle.style.animationDelay = Math.random() * 12 + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // Khởi chạy hệ thống
+        updateHeaderUI();
+        // Cập nhật hiển thị nút khi mới vào (Mặc định Tab 1)
+        showTab(1);
+
+    </script>
+    <script src="internet.js"></script>
+</body>
+</html>
